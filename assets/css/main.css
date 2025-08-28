@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6;
+  }
+
+  .lottery-ball {
+    @apply w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md;
+  }
+
+  .lottery-ball-red {
+    @apply lottery-ball bg-lottery-red;
+  }
+
+  .lottery-ball-blue {
+    @apply lottery-ball bg-lottery-blue;
+  }
+}

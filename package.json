@@ -1,0 +1,38 @@
+{
+  "name": "lottery-predict",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "seed": "tsx server/scripts/seed-data.ts",
+    "freq": "tsx server/scripts/fill-frequency.ts"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "@nuxt/test-utils": "^3.19.2",
+    "@nuxtjs/tailwindcss": "^6.8.4",
+    "@types/http-proxy": "^1.17.16",
+    "@types/node": "^18.17.3",
+    "@vue/test-utils": "^2.4.6",
+    "http-proxy": "^1.18.1",
+    "jsdom": "^26.1.0",
+    "nuxt": "^3.8.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.2.2",
+    "undici": "^7.15.0",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.5.1",
+    "chart.js": "^4.4.0",
+    "mysql2": "^3.6.1",
+    "pinia": "^2.1.6",
+    "vue-chartjs": "^5.2.0"
+  }
+}
