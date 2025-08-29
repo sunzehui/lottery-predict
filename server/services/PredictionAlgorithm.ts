@@ -71,7 +71,7 @@ export class PredictionAlgorithmService {
 
     return {
       issue,
-      predictDate: new Date().toISOString().split('T')[0],
+      predictDate: this.getNextDrawDate(),
       redBalls: selectedRedBalls,
       blueBall: selectedBlueBall,
       confidence,
@@ -111,7 +111,7 @@ export class PredictionAlgorithmService {
 
     return {
       issue,
-      predictDate: new Date().toISOString().split('T')[0],
+      predictDate: this.getNextDrawDate(),
       redBalls: selectedRedBalls,
       blueBall: selectedBlueBall,
       confidence,
@@ -150,7 +150,7 @@ export class PredictionAlgorithmService {
 
     return {
       issue,
-      predictDate: new Date().toISOString().split('T')[0],
+      predictDate: this.getNextDrawDate(),
       redBalls: selectedRedBalls,
       blueBall: selectedBlueBall,
       confidence,
@@ -186,7 +186,7 @@ export class PredictionAlgorithmService {
 
     return {
       issue,
-      predictDate: new Date().toISOString().split('T')[0],
+      predictDate: this.getNextDrawDate(),
       redBalls: selectedRedBalls,
       blueBall: selectedBlueBall,
       confidence,
@@ -254,7 +254,7 @@ export class PredictionAlgorithmService {
 
       return {
         issue,
-        predictDate: new Date().toISOString().split('T')[0],
+        predictDate: this.getNextDrawDate(),
         redBalls: finalRedBalls,
         blueBall: finalBlueBall,
         confidence,
@@ -358,6 +358,57 @@ export class PredictionAlgorithmService {
       console.error('获取下一期期号失败:', error)
       return null
     }
+  }
+
+  // 计算下一次开奖日期
+  // 双色球开奖时间：每周二、四、日 21:00
+  private static getNextDrawDate(currentDate: Date = new Date()): string {
+    const date = new Date(currentDate)
+    const day = date.getDay() // 0 = 周日, 1 = 周一, ..., 6 = 周六
+
+    // 计算到下一次开奖日期的天数
+    let daysToAdd = 0
+
+    if (day === 0) { // 周日
+      // 如果当前时间在21点之前，今天开奖
+      if (date.getHours() < 21) {
+        daysToAdd = 0
+      } else {
+        // 否则下次开奖是周二
+        daysToAdd = 2
+      }
+    } else if (day === 2) { // 周二
+      // 如果当前时间在21点之前，今天开奖
+      if (date.getHours() < 21) {
+        daysToAdd = 0
+      } else {
+        // 否则下次开奖是周四
+        daysToAdd = 2
+      }
+    } else if (day === 4) { // 周四
+      // 如果当前时间在21点之前，今天开奖
+      if (date.getHours() < 21) {
+        daysToAdd = 0
+      } else {
+        // 否则下次开奖是周日
+        daysToAdd = 3
+      }
+    } else if (day === 1) { // 周一
+      daysToAdd = 1 // 周二
+    } else if (day === 3) { // 周三
+      daysToAdd = 1 // 周四
+    } else if (day === 5) { // 周五
+      daysToAdd = 2 // 周日
+    } else if (day === 6) { // 周六
+      daysToAdd = 1 // 周日
+    }
+
+    // 计算开奖日期
+    const drawDate = new Date(date)
+    drawDate.setDate(date.getDate() + daysToAdd)
+
+    // 返回YYYY-MM-DD格式的日期
+    return drawDate.toISOString().split('T')[0]
   }
 
   // 获取算法权重

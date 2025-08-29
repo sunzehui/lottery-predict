@@ -408,6 +408,86 @@ describe('PredictionAlgorithmService', () => {
     })
   })
 
+  describe('getNextDrawDate', () => {
+    it('应该正确计算下一次开奖日期 - 周日21点前', () => {
+      // 周日20点，应该返回今天
+      const sundayBefore21 = new Date(2025, 7, 31, 20, 0, 0) // 2025-08-31 20:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(sundayBefore21)
+      expect(result).toBe('2025-08-31')
+    })
+
+    it('应该正确计算下一次开奖日期 - 周日21点后', () => {
+      // 周日22点，应该返回下周二
+      const sundayAfter21 = new Date(2025, 7, 31, 22, 0, 0) // 2025-08-31 22:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(sundayAfter21)
+      expect(result).toBe('2025-09-02') // 下周二
+    })
+
+    it('应该正确计算下一次开奖日期 - 周二21点前', () => {
+      // 周二20点，应该返回今天
+      const tuesdayBefore21 = new Date(2025, 7, 26, 20, 0, 0) // 2025-08-26 20:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(tuesdayBefore21)
+      expect(result).toBe('2025-08-26')
+    })
+
+    it('应该正确计算下一次开奖日期 - 周二21点后', () => {
+      // 周二22点，应该返回周四
+      const tuesdayAfter21 = new Date(2025, 7, 26, 22, 0, 0) // 2025-08-26 22:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(tuesdayAfter21)
+      expect(result).toBe('2025-08-28') // 周四
+    })
+
+    it('应该正确计算下一次开奖日期 - 周四21点前', () => {
+      // 周四20点，应该返回今天
+      const thursdayBefore21 = new Date(2025, 7, 28, 20, 0, 0) // 2025-08-28 20:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(thursdayBefore21)
+      expect(result).toBe('2025-08-28')
+    })
+
+    it('应该正确计算下一次开奖日期 - 周四21点后', () => {
+      // 周四22点，应该返回周日
+      const thursdayAfter21 = new Date(2025, 7, 28, 22, 0, 0) // 2025-08-28 22:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(thursdayAfter21)
+      expect(result).toBe('2025-08-31') // 周日
+    })
+
+    it('应该正确计算下一次开奖日期 - 周一', () => {
+      // 周一，应该返回周二
+      const monday = new Date(2025, 7, 25, 12, 0, 0) // 2025-08-25 12:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(monday)
+      expect(result).toBe('2025-08-26') // 周二
+    })
+
+    it('应该正确计算下一次开奖日期 - 周三', () => {
+      // 周三，应该返回周四
+      const wednesday = new Date(2025, 7, 27, 12, 0, 0) // 2025-08-27 12:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(wednesday)
+      expect(result).toBe('2025-08-28') // 周四
+    })
+
+    it('应该正确计算下一次开奖日期 - 周五', () => {
+      // 周五，应该返回周日
+      const friday = new Date(2025, 7, 29, 12, 0, 0) // 2025-08-29 12:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(friday)
+      expect(result).toBe('2025-08-31') // 周日
+    })
+
+    it('应该正确计算下一次开奖日期 - 周六', () => {
+      // 周六，应该返回周日
+      const saturday = new Date(2025, 7, 30, 12, 0, 0) // 2025-08-30 12:00:00
+      const result = (PredictionAlgorithmService as any).getNextDrawDate(saturday)
+      expect(result).toBe('2025-08-31') // 周日
+    })
+
+    it('应该使用当前日期作为默认参数', () => {
+      // 测试不传递参数的情况
+      const result = (PredictionAlgorithmService as any).getNextDrawDate()
+      // 结果应该是未来的日期
+      const today = new Date().toISOString().split('T')[0]
+      expect(result >= today).toBe(true)
+    })
+  })
+
   describe('getAlgorithmWeights', () => {
     it('应该获取算法权重', async () => {
       const result = await (PredictionAlgorithmService as any).getAlgorithmWeights()

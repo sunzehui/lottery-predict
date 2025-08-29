@@ -150,6 +150,7 @@ export class PredictionModel {
     algorithmType?: string
     startDate?: string
     endDate?: string
+    issue?: string
   } = {}): Promise<{ data: Prediction[], total: number }> {
     const { query } = await import('../utils/database')
 
@@ -163,6 +164,11 @@ export class PredictionModel {
     if (options.algorithmType) {
       whereClause += ' AND algorithm_type = ?'
       params.push(options.algorithmType)
+    }
+
+    if (options.issue) {
+      whereClause += ' AND issue = ?'
+      params.push(options.issue)
     }
 
     if (options.startDate) {

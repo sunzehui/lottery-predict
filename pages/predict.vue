@@ -1,5 +1,14 @@
 <template>
   <div class="space-y-6">
+    <!-- 全局加载指示器 -->
+    <div v-if="historyLoading" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 shadow-xl">
+        <div class="flex items-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+          <span class="text-gray-700">加载中...</span>
+        </div>
+      </div>
+    </div>
     <!-- 页面标题 -->
     <div class="bg-white shadow rounded-lg p-6">
       <h1 class="text-2xl font-bold text-gray-900">预测分析</h1>
@@ -12,29 +21,43 @@
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label for="algorithm" class="block text-sm font-medium text-gray-700">预测算法</label>
-          <select
-            id="algorithm"
-            v-model="params.algorithm"
-            class="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          >
-            <option value="frequency">频率分析</option>
-            <option value="trend">趋势分析</option>
-            <option value="coldHot">冷热号分析</option>
-            <option value="mixed">综合算法</option>
-          </select>
+          <div class="mt-1 relative">
+            <select
+              id="algorithm"
+              v-model="params.algorithm"
+              class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+              <option value="frequency">频率分析</option>
+              <option value="trend">趋势分析</option>
+              <option value="coldHot">冷热号分析</option>
+              <option value="mixed">综合算法</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+              </svg>
+            </div>
+          </div>
         </div>
         <div>
           <label for="count" class="block text-sm font-medium text-gray-700">预测组数</label>
-          <select
-            id="count"
-            v-model="params.count"
-            class="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          >
-            <option :value="1">1组</option>
-            <option :value="3">3组</option>
-            <option :value="5">5组</option>
-            <option :value="10">10组</option>
-          </select>
+          <div class="mt-1 relative">
+            <select
+              id="count"
+              v-model="params.count"
+              class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+              <option :value="1">1组</option>
+              <option :value="3">3组</option>
+              <option :value="5">5组</option>
+              <option :value="10">10组</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+              </svg>
+            </div>
+          </div>
         </div>
         <div class="flex items-end">
           <button
@@ -70,7 +93,7 @@
       <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-lg font-medium text-gray-900">预测结果</h2>
         <p class="mt-1 text-sm text-gray-500">
-          第 {{ predictions[0].issue }} 期 ({{ predictions[0].predictDate }})
+          第 {{ predictions[0].issue }} 期 ({{ formatDate(predictions[0].predictDate) }})
         </p>
       </div>
       
@@ -136,53 +159,128 @@
         <h2 class="text-lg font-medium text-gray-900">历史预测记录</h2>
       </div>
       
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">期号</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">预测日期</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">红球</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">蓝球</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">算法</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">置信度</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-if="historyLoading">
-              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
-                加载中...
-              </td>
-            </tr>
-            <tr v-else-if="historyData.length === 0">
-              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
-                暂无历史预测记录
-              </td>
-            </tr>
-            <tr v-for="item in historyData" :key="item.id">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.issue }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.predictDate }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <!-- 期数过滤器 -->
+      <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label for="filterIssue" class="block text-sm font-medium text-gray-700">期数</label>
+            <div class="mt-1 relative">
+              <select
+                id="filterIssue"
+                v-model="issueFilter.issue"
+                class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              >
+                <option value="">请选择期数</option>
+                <option
+                  v-for="issue in availableIssues"
+                  :key="issue"
+                  :value="issue"
+                >
+                  第 {{ issue }} 期
+                </option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-end">
+            <button
+              @click="applyIssueFilter"
+              :disabled="historyLoading || !issueFilter.issue"
+              class="w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              查询
+            </button>
+          </div>
+          <div class="flex items-end">
+            <button
+              @click="resetIssueFilter"
+              :disabled="historyLoading"
+              class="w-full bg-gray-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+            >
+              重置
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-4">
+        <!-- 空数据状态 -->
+        <div v-if="historyData.length === 0 && !historyLoading" class="flex justify-center items-center py-8">
+          <div class="text-sm text-gray-500">暂无历史预测记录</div>
+        </div>
+        
+        <!-- 卡片布局 -->
+        <div v-if="historyData.length > 0" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="item in historyData"
+            :key="item.id"
+            class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-300"
+          >
+            <!-- 卡片头部：期号和日期 -->
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">第 {{ item.issue }} 期</h3>
+                <p class="text-xs text-gray-500 mt-1">{{ formatDate(item.predictDate) }}</p>
+              </div>
+              <span
+                :class="getPrizeLevelClass(item.prizeLevel, item.hasResult)"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+              >
+                {{ getPrizeLevelText(item.prizeLevel, item.hasResult) }}
+              </span>
+            </div>
+            
+            <!-- 号码显示 -->
+            <div class="mb-3">
+              <div class="flex items-center space-x-2">
                 <div class="flex space-x-1">
-                  <span 
-                    v-for="ball in getRedBalls(item)" 
-                    :key="ball" 
-                    class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                  <span
+                    v-for="ball in getRedBalls(item)"
+                    :key="ball"
+                    class="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
                   >
                     {{ ball }}
                   </span>
                 </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <span class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold inline-block">
+                <span class="text-gray-500">+</span>
+                <span
+                  class="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold inline-block"
+                >
                   {{ item.blueBall }}
                 </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ getAlgorithmName(item.algorithmType) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.confidence }}%</td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </div>
+            
+            <!-- 底部信息：算法和置信度 -->
+            <div class="flex justify-between items-center text-xs text-gray-500">
+              <div>
+                <span class="font-medium">算法:</span> {{ getAlgorithmName(item.algorithmType) }}
+              </div>
+              <div>
+                <span class="font-medium">置信度:</span> {{ item.confidence }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 无限滚动加载更多提示 -->
+      <div v-if="hasMoreData && !historyLoading" ref="loadMoreTrigger" class="py-4 text-center">
+        <div class="text-sm text-gray-500">上拉加载更多</div>
+      </div>
+      
+      <!-- 加载更多状态 -->
+      <div v-if="loadingMore" class="py-4 text-center">
+        <div class="text-sm text-gray-500">加载更多中...</div>
+      </div>
+      
+      <!-- 无更多数据提示 -->
+      <div v-if="!hasMoreData && historyData.length > 0" class="py-4 text-center">
+        <div class="text-sm text-gray-500">已加载全部数据</div>
       </div>
     </div>
   </div>
@@ -197,6 +295,7 @@ useHead({
 import { useErrorStore } from '~/stores/errorStore'
 import { useToastStore } from '~/stores/toastStore'
 import { getWithTimeout, postWithTimeout } from '~/utils/apiUtils'
+import { nextTick, onUnmounted, watch } from 'vue'
 
 // 初始化错误存储和Toast存储
 const errorStore = useErrorStore()
@@ -215,6 +314,30 @@ const loading = ref(false)
 // 历史预测记录
 const historyData = ref([])
 const historyLoading = ref(false)
+const loadingMore = ref(false)
+
+// 开奖结果数据
+const lotteryResults = ref({})
+
+// 分页状态
+const pagination = ref({
+  page: 1,
+  size: 10,
+  total: 0,
+  totalPages: 0
+})
+
+// 无限滚动相关
+const loadMoreTrigger = ref(null)
+const hasMoreData = ref(true)
+const observer = ref(null)
+
+// 期数过滤相关
+const issueFilter = ref({
+  issue: ''
+})
+const availableIssues = ref([])
+const issuesLoading = ref(false)
 
 // 获取算法名称
 const getAlgorithmName = (algorithm) => {
@@ -227,9 +350,82 @@ const getAlgorithmName = (algorithm) => {
   return algorithmMap[algorithm] || algorithm
 }
 
+// 格式化日期为本地时间（年月日 周一）
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  
+  const date = new Date(dateString)
+  
+  // 检查日期是否有效
+  if (isNaN(date.getTime())) return dateString
+  
+  // 获取年月日
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  
+  // 获取星期几
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const weekday = weekdays[date.getDay()]
+  
+  return `${year}年${month}月${day}日（${weekday}）`
+}
+
 // 获取红球号码
 const getRedBalls = (item) => {
   return item.redBalls.sort((a, b) => a - b)
+}
+
+// 计算中奖等级
+const calculatePrizeLevel = (prediction, result) => {
+  if (!result) return null
+  
+  const redHits = prediction.redBalls.filter(ball => result.redBalls.includes(ball)).length
+  const blueHit = prediction.blueBall === result.blueBall
+  
+  // 双色球中奖规则
+  if (redHits === 6 && blueHit) return 1
+  if (redHits === 6 && !blueHit) return 2
+  if (redHits === 5 && blueHit) return 3
+  if (redHits === 5 || (redHits === 4 && blueHit)) return 4
+  if (redHits === 4 || (redHits === 3 && blueHit)) return 5
+  if ((redHits === 2 && blueHit) || (redHits === 1 && blueHit) || (redHits === 0 && blueHit)) return 6
+  
+  return null
+}
+
+// 获取中奖等级文本
+const getPrizeLevelText = (prizeLevel, hasResult = true) => {
+  if (!hasResult) return '等待开奖'
+  if (!prizeLevel) return '未中奖'
+  
+  const prizeTexts = {
+    1: '一等奖',
+    2: '二等奖',
+    3: '三等奖',
+    4: '四等奖',
+    5: '五等奖',
+    6: '六等奖'
+  }
+  
+  return prizeTexts[prizeLevel] || '未中奖'
+}
+
+// 获取中奖等级样式类
+const getPrizeLevelClass = (prizeLevel, hasResult = true) => {
+  if (!hasResult) return 'bg-yellow-100 text-yellow-800'
+  if (!prizeLevel) return 'bg-gray-100 text-gray-800'
+  
+  const prizeClasses = {
+    1: 'bg-red-100 text-red-800',
+    2: 'bg-orange-100 text-orange-800',
+    3: 'bg-yellow-100 text-yellow-800',
+    4: 'bg-green-100 text-green-800',
+    5: 'bg-blue-100 text-blue-800',
+    6: 'bg-purple-100 text-purple-800'
+  }
+  
+  return prizeClasses[prizeLevel] || 'bg-gray-100 text-gray-800'
 }
 
 // 生成预测
@@ -289,27 +485,199 @@ const clearPredictions = () => {
   predictions.value = []
 }
 
-// 获取历史预测记录
-const fetchHistoryData = async () => {
-  historyLoading.value = true
+// 获取可用期数列表
+const fetchAvailableIssues = async () => {
+  issuesLoading.value = true
   try {
-    const response = await getWithTimeout('/api/lottery/predict/history', {
-      page: 1,
-      size: 10
+    const response = await getWithTimeout('/api/lottery/predict/available-issues', {
+      limit: 10
     })
     
     if (response.success) {
-      historyData.value = response.data
+      availableIssues.value = response.data || []
+    }
+  } catch (error) {
+    errorStore.handleApiError(error)
+  } finally {
+    issuesLoading.value = false
+  }
+}
+
+// 应用期数过滤
+const applyIssueFilter = async () => {
+  if (!issueFilter.value.issue) {
+    toastStore.showError('请选择要查询的期数')
+    return
+  }
+  
+  // 重置分页并重新获取数据
+  pagination.value.page = 1
+  hasMoreData.value = true
+  
+  // 直接获取新数据，不要清空历史数据
+  await fetchHistoryData(1, false)
+}
+
+// 重置期数过滤
+const resetIssueFilter = async () => {
+  issueFilter.value.issue = ''
+  
+  // 重置分页并重新获取数据
+  pagination.value.page = 1
+  hasMoreData.value = true
+  
+  // 直接获取新数据，不要清空历史数据
+  await fetchHistoryData(1, false)
+}
+
+// 获取历史预测记录
+const fetchHistoryData = async (page = 1, append = false) => {
+  if (!append) {
+    historyLoading.value = true
+  } else {
+    loadingMore.value = true
+  }
+  
+  try {
+    // 构建请求参数
+    const queryParams = {
+      page,
+      size: pagination.value.size
+    }
+    
+    // 添加期数过滤参数
+    if (issueFilter.value.issue) {
+      queryParams.issue = issueFilter.value.issue
+    }
+    
+    const response = await getWithTimeout('/api/lottery/predict/history', queryParams)
+    
+    if (response.success) {
+      // 获取历史预测记录
+      const predictions = response.data
+      
+      // 更新分页信息
+      if (response.pagination) {
+        pagination.value = {
+          page: response.pagination.page,
+          size: response.pagination.size,
+          total: response.pagination.total,
+          totalPages: response.pagination.totalPages
+        }
+        
+        // 检查是否还有更多数据
+        hasMoreData.value = pagination.value.page < pagination.value.totalPages
+      }
+      
+      // 获取所有期号
+      const issues = [...new Set(predictions.map(p => p.issue))]
+      
+      // 获取开奖结果 - 批量获取所有期号的结果，减少闪烁
+      const resultsMap = {}
+      if (issues.length > 0) {
+        try {
+          // 使用 Promise.all 并行获取所有期号的结果
+          const resultPromises = issues.map(issue =>
+            getWithTimeout('/api/lottery/history', {
+              issue,
+              size: 1
+            }).catch(error => {
+              console.warn(`获取期号 ${issue} 的开奖结果失败:`, error)
+              return { success: false, data: [] }
+            })
+          )
+          
+          const results = await Promise.all(resultPromises)
+          
+          // 处理结果
+          results.forEach((resultResponse, index) => {
+            if (resultResponse.success && resultResponse.data.length > 0) {
+              resultsMap[issues[index]] = resultResponse.data[0]
+            }
+          })
+        } catch (error) {
+          console.warn('批量获取开奖结果失败:', error)
+        }
+      }
+      
+      // 计算每个预测的中奖等级
+      const processedPredictions = predictions.map(prediction => {
+        const result = resultsMap[prediction.issue]
+        const prizeLevel = result ? calculatePrizeLevel(prediction, result) : null
+        const hasResult = !!result
+        
+        return {
+          ...prediction,
+          prizeLevel,
+          hasResult
+        }
+      })
+      
+      // 根据是否追加数据来更新历史数据
+      if (append) {
+        historyData.value = [...historyData.value, ...processedPredictions]
+      } else {
+        historyData.value = processedPredictions
+      }
     }
   } catch (error) {
     errorStore.handleApiError(error)
   } finally {
     historyLoading.value = false
+    loadingMore.value = false
   }
 }
 
-// 页面加载时获取历史预测记录
+// 加载更多数据
+const loadMoreData = async () => {
+  if (hasMoreData.value && !loadingMore.value && !historyLoading.value) {
+    const nextPage = pagination.value.page + 1
+    await fetchHistoryData(nextPage, true)
+  }
+}
+
+// 设置无限滚动观察器
+const setupInfiniteScroll = () => {
+  if (observer.value) {
+    observer.value.disconnect()
+  }
+  
+  observer.value = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && hasMoreData.value) {
+      loadMoreData()
+    }
+  }, {
+    rootMargin: '100px' // 提前100px触发加载
+  })
+  
+  if (loadMoreTrigger.value) {
+    observer.value.observe(loadMoreTrigger.value)
+  }
+}
+
+// 页面加载时获取历史预测记录、可用期数和设置无限滚动
 onMounted(() => {
   fetchHistoryData()
+  fetchAvailableIssues()
+  
+  // 在下一个tick中设置无限滚动，确保DOM已渲染
+  nextTick(() => {
+    setupInfiniteScroll()
+  })
+})
+
+// 组件卸载时断开观察器
+onUnmounted(() => {
+  if (observer.value) {
+    observer.value.disconnect()
+  }
+})
+
+// 监听loadMoreTrigger元素的变化，重新设置观察器
+watch(loadMoreTrigger, () => {
+  if (loadMoreTrigger.value) {
+    setupInfiniteScroll()
+  }
 })
 </script>
+

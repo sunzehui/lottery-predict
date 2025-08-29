@@ -8,6 +8,7 @@ export default defineEventHandler(async (event) => {
     const page = parseInt(query.page as string) || 1
     const size = parseInt(query.size as string) || 10
     const algorithmType = query.algorithmType as string
+    const issue = query.issue as string
 
     // 验证分页参数
     if (page < 1) {
@@ -28,7 +29,8 @@ export default defineEventHandler(async (event) => {
     const result = await PredictionModel.getList({
       page,
       size,
-      algorithmType
+      algorithmType,
+      issue
     })
 
     return {
