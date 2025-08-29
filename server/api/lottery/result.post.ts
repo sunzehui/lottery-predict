@@ -66,8 +66,8 @@ export default defineEventHandler(async (event) => {
 
     // 插入数据
     const insertSql = `
-      INSERT INTO lottery_results 
-      (issue, draw_date, red_ball_1, red_ball_2, red_ball_3, red_ball_4, red_ball_5, red_ball_6, blue_ball, created_at)
+      INSERT INTO lottery_results
+      (issue, date, red_ball_1, red_ball_2, red_ball_3, red_ball_4, red_ball_5, red_ball_6, blue_ball, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `
 

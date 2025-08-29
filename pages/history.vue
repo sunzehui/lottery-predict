@@ -59,27 +59,28 @@
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">红球</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">蓝球</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">奖池金额(元)</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">详情</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-if="loading">
-              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
                 加载中...
               </td>
             </tr>
             <tr v-else-if="data.length === 0">
-              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
                 暂无数据
               </td>
             </tr>
             <tr v-for="item in data" :key="item.id">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.issue }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.date }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDateToLocal(item.date) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div class="flex space-x-1">
-                  <span 
-                    v-for="ball in getRedBalls(item)" 
-                    :key="ball" 
+                  <span
+                    v-for="ball in getRedBalls(item)"
+                    :key="ball"
                     class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
                   >
                     {{ ball }}
@@ -92,6 +93,17 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatMoney(item.prizePool) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <button
+                  @click="showDetails(item)"
+                  class="text-indigo-600 hover:text-indigo-900"
+                  title="查看详情"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                  </svg>
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -166,6 +178,114 @@
         </div>
       </div>
     </div>
+    
+    <!-- 详情弹框 -->
+    <div v-if="showDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closeDetailModal">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">开奖详情 - {{ selectedItem?.issue }}</h3>
+            <button
+              @click="closeDetailModal"
+              class="text-gray-400 hover:text-gray-500"
+            >
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div v-if="selectedItem" class="space-y-4">
+            <!-- 基本信息 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="text-sm font-medium text-gray-500 mb-2">基本信息</h4>
+                <div class="space-y-2">
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">期号:</span>
+                    <span class="text-sm font-medium">{{ selectedItem.issue }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">开奖日期:</span>
+                    <span class="text-sm font-medium">{{ formatDateToLocal(selectedItem.date) }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">红球:</span>
+                    <div class="flex space-x-1">
+                      <span
+                        v-for="ball in getRedBalls(selectedItem)"
+                        :key="ball"
+                        class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                      >
+                        {{ ball }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">蓝球:</span>
+                    <span class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold inline-block">
+                      {{ selectedItem.blueBall }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 销售信息 -->
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="text-sm font-medium text-gray-500 mb-2">销售信息</h4>
+                <div class="space-y-2">
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">销售总额:</span>
+                    <span class="text-sm font-medium">{{ formatMoney(selectedItem.salesAmount) }} 元</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-600">奖池金额:</span>
+                    <span class="text-sm font-medium">{{ formatMoney(selectedItem.prizePool) }} 元</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 奖项信息 -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-500 mb-2">奖项信息</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="border-l-4 border-yellow-400 pl-4">
+                  <h5 class="text-sm font-medium text-gray-700">一等奖</h5>
+                  <div class="mt-2 space-y-1">
+                    <div class="text-sm text-gray-600">中奖注数: {{ selectedItem.firstPrizeWinners || 0 }}</div>
+                    <div class="text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.firstPrizeSingleAmountCents) }} 元</div>
+                  </div>
+                </div>
+                <div class="border-l-4 border-gray-400 pl-4">
+                  <h5 class="text-sm font-medium text-gray-700">二等奖</h5>
+                  <div class="mt-2 space-y-1">
+                    <div class="text-sm text-gray-600">中奖注数: {{ selectedItem.secondPrizeWinners || 0 }}</div>
+                    <div class="text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.secondPrizeSingleAmountCents) }} 元</div>
+                  </div>
+                </div>
+                <div class="border-l-4 border-green-400 pl-4">
+                  <h5 class="text-sm font-medium text-gray-700">三等奖</h5>
+                  <div class="mt-2 space-y-1">
+                    <div class="text-sm text-gray-600">中奖注数: {{ selectedItem.thirdPrizeWinners || 0 }}</div>
+                    <div class="text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.thirdPrizeSingleAmountCents) }} 元</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-6 flex justify-end">
+            <button
+              @click="closeDetailModal"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -198,6 +318,22 @@ const pagination = ref({
   totalPages: 0
 })
 
+// 详情弹框相关
+const showDetailModal = ref(false)
+const selectedItem = ref(null)
+
+// 显示详情弹框
+const showDetails = (item) => {
+  selectedItem.value = item
+  showDetailModal.value = true
+}
+
+// 关闭详情弹框
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  selectedItem.value = null
+}
+
 // 获取红球号码
 const getRedBalls = (item) => {
   return [
@@ -214,6 +350,19 @@ const getRedBalls = (item) => {
 const formatMoney = (amount) => {
   if (!amount) return '-'
   return new Intl.NumberFormat('zh-CN').format(amount)
+}
+
+// 格式化日期为本地时间（年月日 周几）
+const formatDateToLocal = (dateString) => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const weekDay = weekDays[date.getDay()]
+  
+  return `${year}年${month}月${day}日（${weekDay}）`
 }
 
 // 获取页码数组

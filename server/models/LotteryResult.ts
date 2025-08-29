@@ -6,6 +6,12 @@ export interface LotteryResult {
   blueBall: number
   prizePool?: number
   salesAmount?: number
+  firstPrizeWinners?: number
+  firstPrizeSingleAmountCents?: number
+  secondPrizeWinners?: number
+  secondPrizeSingleAmountCents?: number
+  thirdPrizeWinners?: number
+  thirdPrizeSingleAmountCents?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -235,6 +241,12 @@ export class LotteryResultModel {
       blueBall: row.blue_ball,
       prizePool: row.prize_pool ? row.prize_pool / 100 : undefined, // 转换为元
       salesAmount: row.sales_amount ? row.sales_amount / 100 : undefined, // 转换为元
+      firstPrizeWinners: row.first_prize_winners,
+      firstPrizeSingleAmountCents: row.first_prize_single_amount_cents ? row.first_prize_single_amount_cents / 100 : undefined, // 转换为元
+      secondPrizeWinners: row.second_prize_winners,
+      secondPrizeSingleAmountCents: row.second_prize_single_amount_cents ? row.second_prize_single_amount_cents / 100 : undefined, // 转换为元
+      thirdPrizeWinners: row.third_prize_winners,
+      thirdPrizeSingleAmountCents: row.third_prize_single_amount_cents ? row.third_prize_single_amount_cents / 100 : undefined, // 转换为元
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }

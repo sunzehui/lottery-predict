@@ -2,27 +2,16 @@ module.exports = {
   apps: [
     {
       name: 'lottery-predict',
-      script: 'node',
-      args: '.output/server/index.mjs',
-      cwd: './',
+      script: './.output/server/index.mjs',
       instances: 'max',
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
         DB_HOST: '127.0.0.1',
         DB_PORT: 3306,
-        DB_USER: 'lottery',
-        DB_PASSWORD: 'lottery',
-        DB_NAME: 'lottery',
-        ADMIN_PASSWORD: 'admin123'
-      },
-      env_development: {
-        NODE_ENV: 'development',
-        DB_HOST: '127.0.0.1',
-        DB_PORT: 3306,
-        DB_USER: 'lottery',
-        DB_PASSWORD: 'lottery',
-        DB_NAME: 'lottery',
+        DB_USER: 'predict_hui_zone',
+        DB_PASSWORD: 'predict_hui_zone',
+        DB_NAME: 'predict_hui_zone',
         ADMIN_PASSWORD: 'admin123'
       },
       log_file: './logs/combined.log',
