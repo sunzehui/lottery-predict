@@ -1,14 +1,14 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- 页面标题 -->
-    <div class="bg-white shadow rounded-lg p-6">
-      <h1 class="text-2xl font-bold text-gray-900">历史开奖数据</h1>
-      <p class="mt-2 text-gray-600">查看双色球历史开奖记录，支持按期号、日期范围筛选</p>
+    <div class="bg-white shadow rounded-lg p-4 sm:p-6">
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900">历史开奖数据</h1>
+      <p class="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">查看双色球历史开奖记录，支持按期号、日期范围筛选</p>
     </div>
     
     <!-- 筛选表单 -->
-    <div class="bg-white shadow rounded-lg p-6">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="bg-white shadow rounded-lg p-4 sm:p-6">
+      <div class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label for="issue" class="block text-sm font-medium text-gray-700">期号</label>
           <input
@@ -48,8 +48,8 @@
       </div>
     </div>
     
-    <!-- 数据表格 -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
+    <!-- 数据表格 - 桌面端 -->
+    <div class="hidden sm:block bg-white shadow rounded-lg overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -108,184 +108,320 @@
           </tbody>
         </table>
       </div>
+    </div>
+    
+    <!-- 数据卡片 - 移动端 -->
+    <div class="sm:hidden space-y-4">
+      <!-- 加载状态 -->
+      <div v-if="loading" class="bg-white shadow rounded-lg p-4 text-center">
+        <p class="text-sm text-gray-500">加载中...</p>
+      </div>
       
-      <!-- 分页 -->
-      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button
-            @click="prevPage"
-            :disabled="pagination.page === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            上一页
-          </button>
-          <button
-            @click="nextPage"
-            :disabled="pagination.page >= pagination.totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            下一页
-          </button>
-        </div>
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700">
-              显示第 <span class="font-medium">{{ (pagination.page - 1) * pagination.size + 1 }}</span> 至 
-              <span class="font-medium">{{ Math.min(pagination.page * pagination.size, pagination.total) }}</span> 条，
-              共 <span class="font-medium">{{ pagination.total }}</span> 条结果
-            </p>
+      <!-- 无数据状态 -->
+      <div v-else-if="data.length === 0" class="bg-white shadow rounded-lg p-4 text-center">
+        <p class="text-sm text-gray-500">暂无数据</p>
+      </div>
+      
+      <!-- 数据卡片 -->
+      <div v-else v-for="item in data" :key="item.id" class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="p-4">
+          <!-- 期号和日期 -->
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <h3 class="text-base font-medium text-gray-900">第 {{ item.issue }} 期</h3>
+              <p class="text-xs text-gray-500 mt-1">{{ formatDateToLocal(item.date) }}</p>
+            </div>
+            <button
+              @click="showDetails(item)"
+              class="text-indigo-600 hover:text-indigo-900"
+              title="查看详情"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+              </svg>
+            </button>
           </div>
-          <div>
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button
-                @click="prevPage"
-                :disabled="pagination.page === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                <span class="sr-only">上一页</span>
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
-              </button>
-              
-              <!-- 页码按钮 -->
-              <button
-                v-for="page in getPageNumbers()"
-                :key="page"
-                @click="goToPage(page)"
-                :class="[
-                  page === pagination.page
-                    ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
-                  'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
-                ]"
-              >
-                {{ page }}
-              </button>
-              
-              <button
-                @click="nextPage"
-                :disabled="pagination.page >= pagination.totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                <span class="sr-only">下一页</span>
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            </nav>
+          
+          <!-- 开奖号码 -->
+          <div class="mb-3">
+            <div class="flex items-center">
+              <div class="flex gap-1">
+                <span
+                  v-for="ball in getRedBalls(item)"
+                  :key="ball"
+                  class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                >
+                  {{ ball }}
+                </span>
+              </div>
+              <span class="mx-2 text-gray-400">+</span>
+              <span class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold inline-block">
+                {{ item.blueBall }}
+              </span>
+            </div>
+          </div>
+          
+          <!-- 奖池金额 -->
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-gray-500">奖池金额</span>
+            <span class="text-sm font-medium text-gray-900">{{ formatMoney(item.prizePool) }}</span>
           </div>
         </div>
       </div>
     </div>
     
-    <!-- 详情弹框 -->
-    <div v-if="showDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closeDetailModal">
-      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">开奖详情 - {{ selectedItem?.issue }}</h3>
+    <!-- 分页 -->
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg">
+      <div class="flex-1 flex justify-between sm:hidden">
+        <button
+          @click="prevPage"
+          :disabled="pagination.page === 1"
+          class="relative inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          上一页
+        </button>
+        <div class="text-sm text-gray-700 flex items-center">
+          <span class="font-medium">{{ pagination.page }}</span> / <span>{{ pagination.totalPages }}</span>
+        </div>
+        <button
+          @click="nextPage"
+          :disabled="pagination.page >= pagination.totalPages"
+          class="relative inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          下一页
+        </button>
+      </div>
+      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            显示第 <span class="font-medium">{{ (pagination.page - 1) * pagination.size + 1 }}</span> 至
+            <span class="font-medium">{{ Math.min(pagination.page * pagination.size, pagination.total) }}</span> 条，
+            共 <span class="font-medium">{{ pagination.total }}</span> 条结果
+          </p>
+        </div>
+        <div>
+          <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
             <button
-              @click="closeDetailModal"
-              class="text-gray-400 hover:text-gray-500"
+              @click="prevPage"
+              :disabled="pagination.page === 1"
+              class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <span class="sr-only">上一页</span>
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
               </svg>
             </button>
-          </div>
-          
-          <div v-if="selectedItem" class="space-y-4">
-            <!-- 基本信息 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="bg-gray-50 p-4 rounded-lg">
-                <h4 class="text-sm font-medium text-gray-500 mb-2">基本信息</h4>
-                <div class="space-y-2">
-                  <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">期号:</span>
-                    <span class="text-sm font-medium">{{ selectedItem.issue }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">开奖日期:</span>
-                    <span class="text-sm font-medium">{{ formatDateToLocal(selectedItem.date) }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">红球:</span>
-                    <div class="flex space-x-1">
-                      <span
-                        v-for="ball in getRedBalls(selectedItem)"
-                        :key="ball"
-                        class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
-                      >
-                        {{ ball }}
+            
+            <!-- 页码按钮 -->
+            <button
+              v-for="page in getPageNumbers()"
+              :key="page"
+              @click="goToPage(page)"
+              :class="[
+                page === pagination.page
+                  ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
+                'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
+              ]"
+            >
+              {{ page }}
+            </button>
+            
+            <button
+              @click="nextPage"
+              :disabled="pagination.page >= pagination.totalPages"
+              class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span class="sr-only">下一页</span>
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 详情弹框 -->
+    <transition
+      name="modal-fade"
+      enter-active-class="transition-opacity duration-300 ease-in-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-300 ease-in-out"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="showDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="closeDetailModal">
+        <transition
+          name="modal-slide"
+          enter-active-class="transition-all duration-300 ease-out"
+          enter-from-class="transform scale-95 opacity-0"
+          enter-to-class="transform scale-100 opacity-100"
+          leave-active-class="transition-all duration-300 ease-in"
+          leave-from-class="transform scale-100 opacity-100"
+          leave-to-class="transform scale-95 opacity-0"
+        >
+          <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-11/12 sm:w-10/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white max-h-[90vh] flex flex-col">
+            <div class="flex-shrink-0">
+              <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900">开奖详情 - {{ selectedItem?.issue }}</h3>
+                <button
+                  @click="closeDetailModal"
+                  class="text-gray-400 hover:text-gray-500"
+                >
+                  <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div v-if="selectedItem" class="flex-grow overflow-y-auto pr-1 -mr-1">
+              <div class="space-y-3 sm:space-y-4">
+                <!-- 基本信息 -->
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                  <h4 class="text-sm font-medium text-gray-500 mb-2">基本信息</h4>
+                  <div class="space-y-2">
+                    <div class="flex justify-between">
+                      <span class="text-xs sm:text-sm text-gray-600">期号:</span>
+                      <span class="text-xs sm:text-sm font-medium">{{ selectedItem.issue }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-xs sm:text-sm text-gray-600">开奖日期:</span>
+                      <span class="text-xs sm:text-sm font-medium">{{ formatDateToLocal(selectedItem.date) }}</span>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                      <span class="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-0">红球:</span>
+                      <div class="flex gap-1">
+                        <span
+                          v-for="ball in getRedBalls(selectedItem)"
+                          :key="ball"
+                          class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                        >
+                          {{ ball }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-xs sm:text-sm text-gray-600">蓝球:</span>
+                      <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold inline-block">
+                        {{ selectedItem.blueBall }}
                       </span>
                     </div>
                   </div>
-                  <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">蓝球:</span>
-                    <span class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold inline-block">
-                      {{ selectedItem.blueBall }}
-                    </span>
+                </div>
+                
+                <!-- 销售信息 -->
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                  <h4 class="text-sm font-medium text-gray-500 mb-2">销售信息</h4>
+                  <div class="space-y-2">
+                    <div class="flex justify-between">
+                      <span class="text-xs sm:text-sm text-gray-600">销售总额:</span>
+                      <span class="text-xs sm:text-sm font-medium">{{ formatMoney(selectedItem.salesAmount) }} 元</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-xs sm:text-sm text-gray-600">奖池金额:</span>
+                      <span class="text-xs sm:text-sm font-medium">{{ formatMoney(selectedItem.prizePool) }} 元</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <!-- 销售信息 -->
-              <div class="bg-gray-50 p-4 rounded-lg">
-                <h4 class="text-sm font-medium text-gray-500 mb-2">销售信息</h4>
-                <div class="space-y-2">
-                  <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">销售总额:</span>
-                    <span class="text-sm font-medium">{{ formatMoney(selectedItem.salesAmount) }} 元</span>
+                
+                <!-- 奖项信息 - 可折叠 -->
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                  <div
+                    class="flex items-center justify-between mb-2 cursor-pointer"
+                    @click="showPrizeDetails = !showPrizeDetails"
+                  >
+                    <h4 class="text-sm font-medium text-gray-500">奖项信息</h4>
+                    <svg
+                      :class="{'rotate-180': showPrizeDetails}"
+                      class="h-5 w-5 transform transition-transform duration-300 text-indigo-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
-                  <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">奖池金额:</span>
-                    <span class="text-sm font-medium">{{ formatMoney(selectedItem.prizePool) }} 元</span>
+                  
+                  <!-- 奖项详情 - 移动端可折叠 -->
+                  <transition
+                    name="slide"
+                    enter-active-class="transition-all duration-300 ease-in-out"
+                    enter-from-class="max-h-0 opacity-0"
+                    enter-to-class="max-h-96 opacity-100"
+                    leave-active-class="transition-all duration-300 ease-in-out"
+                    leave-from-class="max-h-96 opacity-100"
+                    leave-to-class="max-h-0 opacity-0"
+                  >
+                    <div v-show="showPrizeDetails" class="mt-2 space-y-3 overflow-hidden">
+                      <div class="border-l-4 border-yellow-400 pl-3 sm:pl-4">
+                        <h5 class="text-sm font-medium text-gray-700">一等奖</h5>
+                        <div class="mt-2 space-y-1">
+                          <div class="text-xs sm:text-sm text-gray-600">中奖注数: {{ selectedItem.firstPrizeWinners || 0 }}</div>
+                          <div class="text-xs sm:text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.firstPrizeSingleAmountCents) }} 元</div>
+                        </div>
+                      </div>
+                      <div class="border-l-4 border-gray-400 pl-3 sm:pl-4">
+                        <h5 class="text-sm font-medium text-gray-700">二等奖</h5>
+                        <div class="mt-2 space-y-1">
+                          <div class="text-xs sm:text-sm text-gray-600">中奖注数: {{ selectedItem.secondPrizeWinners || 0 }}</div>
+                          <div class="text-xs sm:text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.secondPrizeSingleAmountCents) }} 元</div>
+                        </div>
+                      </div>
+                      <div class="border-l-4 border-green-400 pl-3 sm:pl-4">
+                        <h5 class="text-sm font-medium text-gray-700">三等奖</h5>
+                        <div class="mt-2 space-y-1">
+                          <div class="text-xs sm:text-sm text-gray-600">中奖注数: {{ selectedItem.thirdPrizeWinners || 0 }}</div>
+                          <div class="text-xs sm:text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.thirdPrizeSingleAmountCents) }} 元</div>
+                        </div>
+                      </div>
+                    </div>
+                  </transition>
+                  
+                  <!-- 奖项详情 - 桌面端始终显示 -->
+                  <div class="hidden sm:block mt-2">
+                    <div class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+                      <div class="border-l-4 border-yellow-400 pl-3 sm:pl-4">
+                        <h5 class="text-sm font-medium text-gray-700">一等奖</h5>
+                        <div class="mt-2 space-y-1">
+                          <div class="text-xs sm:text-sm text-gray-600">中奖注数: {{ selectedItem.firstPrizeWinners || 0 }}</div>
+                          <div class="text-xs sm:text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.firstPrizeSingleAmountCents) }} 元</div>
+                        </div>
+                      </div>
+                      <div class="border-l-4 border-gray-400 pl-3 sm:pl-4">
+                        <h5 class="text-sm font-medium text-gray-700">二等奖</h5>
+                        <div class="mt-2 space-y-1">
+                          <div class="text-xs sm:text-sm text-gray-600">中奖注数: {{ selectedItem.secondPrizeWinners || 0 }}</div>
+                          <div class="text-xs sm:text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.secondPrizeSingleAmountCents) }} 元</div>
+                        </div>
+                      </div>
+                      <div class="border-l-4 border-green-400 pl-3 sm:pl-4">
+                        <h5 class="text-sm font-medium text-gray-700">三等奖</h5>
+                        <div class="mt-2 space-y-1">
+                          <div class="text-xs sm:text-sm text-gray-600">中奖注数: {{ selectedItem.thirdPrizeWinners || 0 }}</div>
+                          <div class="text-xs sm:text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.thirdPrizeSingleAmountCents) }} 元</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <!-- 奖项信息 -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <h4 class="text-sm font-medium text-gray-500 mb-2">奖项信息</h4>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="border-l-4 border-yellow-400 pl-4">
-                  <h5 class="text-sm font-medium text-gray-700">一等奖</h5>
-                  <div class="mt-2 space-y-1">
-                    <div class="text-sm text-gray-600">中奖注数: {{ selectedItem.firstPrizeWinners || 0 }}</div>
-                    <div class="text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.firstPrizeSingleAmountCents) }} 元</div>
-                  </div>
-                </div>
-                <div class="border-l-4 border-gray-400 pl-4">
-                  <h5 class="text-sm font-medium text-gray-700">二等奖</h5>
-                  <div class="mt-2 space-y-1">
-                    <div class="text-sm text-gray-600">中奖注数: {{ selectedItem.secondPrizeWinners || 0 }}</div>
-                    <div class="text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.secondPrizeSingleAmountCents) }} 元</div>
-                  </div>
-                </div>
-                <div class="border-l-4 border-green-400 pl-4">
-                  <h5 class="text-sm font-medium text-gray-700">三等奖</h5>
-                  <div class="mt-2 space-y-1">
-                    <div class="text-sm text-gray-600">中奖注数: {{ selectedItem.thirdPrizeWinners || 0 }}</div>
-                    <div class="text-sm text-gray-600">单注奖金: {{ formatMoney(selectedItem.thirdPrizeSingleAmountCents) }} 元</div>
-                  </div>
-                </div>
-              </div>
+            <div class="flex-shrink-0 mt-4 sm:mt-6 flex justify-end">
+              <button
+                @click="closeDetailModal"
+                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+              >
+                关闭
+              </button>
             </div>
           </div>
-          
-          <div class="mt-6 flex justify-end">
-            <button
-              @click="closeDetailModal"
-              class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              关闭
-            </button>
-          </div>
-        </div>
+        </transition>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
 
@@ -321,11 +457,14 @@ const pagination = ref({
 // 详情弹框相关
 const showDetailModal = ref(false)
 const selectedItem = ref(null)
+const showPrizeDetails = ref(false) // 控制奖项信息折叠状态
 
 // 显示详情弹框
 const showDetails = (item) => {
   selectedItem.value = item
   showDetailModal.value = true
+  // 重置奖项信息折叠状态
+  showPrizeDetails.value = false
 }
 
 // 关闭详情弹框

@@ -8,6 +8,8 @@ export default defineEventHandler(async (event) => {
     const type = query.type as string || 'frequency' // 默认使用频率分析
     const ballType = query.ballType as string || 'red' // 默认分析红球
     const limit = parseInt(query.limit as string) || 100 // 默认分析最近100期
+    const startDate = query.startDate as string || '' // 开始日期
+    const endDate = query.endDate as string || '' // 结束日期
 
     // 验证分析类型
     const validTypes = ['frequency', 'trend', 'coldHot', 'combination', 'distribution']
@@ -39,23 +41,23 @@ export default defineEventHandler(async (event) => {
 
     switch (type) {
       case 'frequency':
-        result = await AnalysisModel.getFrequency(ballType as 'red' | 'blue')
+        result = await AnalysisModel.getFrequency(ballType as 'red' | 'blue', { limit, startDate, endDate })
         break
       case 'trend':
-        result = await AnalysisModel.getTrend(ballType as 'red' | 'blue', limit)
+        result = await AnalysisModel.getTrend(ballType as 'red' | 'blue', limit, { startDate, endDate })
         break
       case 'coldHot':
-        result = await AnalysisModel.getColdHotAnalysis()
+        result = await AnalysisModel.getColdHotAnalysis({ limit, startDate, endDate })
         break
       case 'combination':
-        result = await AnalysisModel.getCombinationAnalysis(limit)
+        result = await AnalysisModel.getCombinationAnalysis(limit, { startDate, endDate })
         break
       case 'distribution':
         // 使用频率分析作为分布分析
-        result = await AnalysisModel.getFrequency(ballType as 'red' | 'blue')
+        result = await AnalysisModel.getFrequency(ballType as 'red' | 'blue', { limit, startDate, endDate })
         break
       default:
-        result = await AnalysisModel.getFrequency(ballType as 'red' | 'blue')
+        result = await AnalysisModel.getFrequency(ballType as 'red' | 'blue', { limit, startDate, endDate })
     }
 
     return {

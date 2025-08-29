@@ -1,15 +1,15 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <header class="bg-white shadow">
-      <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center">
-          <h1 class="text-3xl font-bold text-gray-900">双色球预测分析系统</h1>
-          <nav class="flex space-x-4">
-            <NuxtLink to="/" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">首页</NuxtLink>
-            <NuxtLink to="/history" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">历史数据</NuxtLink>
-            <NuxtLink to="/predict" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">预测分析</NuxtLink>
-            <NuxtLink to="/analysis" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">数据统计</NuxtLink>
-            <NuxtLink to="/export" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">数据导出</NuxtLink>
+      <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row justify-between items-center">
+          <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-0">双色球预测分析系统</h1>
+          <nav class="flex flex-wrap justify-center gap-1 sm:gap-2 md:gap-4">
+            <NuxtLink to="/" class="text-gray-700 hover:text-blue-600 px-2 py-1 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium">首页</NuxtLink>
+            <NuxtLink to="/history" class="text-gray-700 hover:text-blue-600 px-2 py-1 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium">历史数据</NuxtLink>
+            <NuxtLink to="/predict" class="text-gray-700 hover:text-blue-600 px-2 py-1 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium">预测分析</NuxtLink>
+            <NuxtLink to="/analysis" class="text-gray-700 hover:text-blue-600 px-2 py-1 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium">数据统计</NuxtLink>
+            <NuxtLink to="/export" class="text-gray-700 hover:text-blue-600 px-2 py-1 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium">数据导出</NuxtLink>
           </nav>
         </div>
       </div>

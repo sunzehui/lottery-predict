@@ -47,19 +47,19 @@
             <option value="all">全部</option>
           </select>
         </div>
-        <div>
+        <div v-if="analysisParams.issueCount !== 'all'">
           <label class="block text-sm font-medium text-gray-700 mb-1">开始日期</label>
-          <input 
-            v-model="analysisParams.startDate" 
-            type="date" 
+          <input
+            v-model="analysisParams.startDate"
+            type="date"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
         </div>
-        <div>
+        <div v-if="analysisParams.issueCount !== 'all'">
           <label class="block text-sm font-medium text-gray-700 mb-1">结束日期</label>
-          <input 
-            v-model="analysisParams.endDate" 
-            type="date" 
+          <input
+            v-model="analysisParams.endDate"
+            type="date"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
         </div>
@@ -92,10 +92,13 @@
                 v-for="(freq, num) in analysisResult.frequency.red"
                 :key="num"
                 class="text-center p-1 rounded"
-                :style="{ backgroundColor: getFrequencyColor(freq, 'red') }"
+                :style="{ backgroundColor: getFrequencyColor(freq, analysisResult.frequency.redStats.max, 'red') }"
               >
                 <div class="text-xs">{{ num }}</div>
                 <div class="text-xs font-bold">{{ freq }}</div>
+                <div class="text-xs" :style="{ color: getFrequencyIntensity(freq, analysisResult.frequency.redStats.max) > 50 ? 'white' : 'black' }">
+                  {{ getFrequencyIntensity(freq, analysisResult.frequency.redStats.max) }}%
+                </div>
               </div>
             </div>
           </div>
@@ -108,10 +111,13 @@
                 v-for="(freq, num) in analysisResult.frequency.blue"
                 :key="num"
                 class="text-center p-1 rounded"
-                :style="{ backgroundColor: getFrequencyColor(freq, 'blue') }"
+                :style="{ backgroundColor: getFrequencyColor(freq, analysisResult.frequency.blueStats.max, 'blue') }"
               >
                 <div class="text-xs">{{ num }}</div>
                 <div class="text-xs font-bold">{{ freq }}</div>
+                <div class="text-xs" :style="{ color: getFrequencyIntensity(freq, analysisResult.frequency.blueStats.max) > 50 ? 'white' : 'black' }">
+                  {{ getFrequencyIntensity(freq, analysisResult.frequency.blueStats.max) }}%
+                </div>
               </div>
             </div>
           </div>
@@ -417,13 +423,13 @@ const error = ref(null)
 
 // 初始化日期
 onMounted(() => {
-  // 设置默认日期范围为最近3个月
+  // 设置默认日期范围为当年1月1日至今
   const today = new Date()
-  const threeMonthsAgo = new Date(today)
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+  const currentYear = today.getFullYear()
+  const firstDayOfYear = new Date(currentYear, 0, 1) // 0表示一月，1表示1日
   
   analysisParams.value.endDate = formatDate(today)
-  analysisParams.value.startDate = formatDate(threeMonthsAgo)
+  analysisParams.value.startDate = formatDate(firstDayOfYear)
 })
 
 // 格式化日期
@@ -435,17 +441,25 @@ function formatDate(date) {
 }
 
 // 获取频率颜色
-function getFrequencyColor(freq, ballType = 'blue') {
+function getFrequencyColor(freq, maxFreq, ballType = 'blue') {
   // 根据频率值返回不同的颜色，频率越高颜色越深
-  const intensity = Math.min(255, Math.floor(freq * 10))
+  // 使用相对频率而不是绝对频率，避免高频号码颜色都一样
+  const relativeIntensity = maxFreq > 0 ? Math.min(1, freq / maxFreq) : 0
+  const opacity = 0.2 + (relativeIntensity * 0.8) // 透明度范围：0.2-1.0
   
   if (ballType === 'red') {
     // 红球使用红色背景
-    return `rgba(239, 68, 68, ${intensity / 255})`
+    return `rgba(239, 68, 68, ${opacity})`
   } else {
     // 蓝球使用蓝色背景
-    return `rgba(59, 130, 246, ${intensity / 255})`
+    return `rgba(59, 130, 246, ${opacity})`
   }
+}
+
+// 计算频率强度百分比
+function getFrequencyIntensity(freq, maxFreq) {
+  if (maxFreq === 0) return 0
+  return Math.round((freq / maxFreq) * 100)
 }
 
 // 获取趋势样式类
@@ -698,13 +712,15 @@ async function runAnalysis() {
       limit: analysisParams.value.issueCount === 'all' ? 500 : parseInt(analysisParams.value.issueCount)
     }
     
-    // 添加日期参数（如果后端支持）
-    if (analysisParams.value.startDate) {
-      params.startDate = analysisParams.value.startDate
-    }
-    
-    if (analysisParams.value.endDate) {
-      params.endDate = analysisParams.value.endDate
+    // 添加日期参数（如果后端支持且不是"全部"选项）
+    if (analysisParams.value.issueCount !== 'all') {
+      if (analysisParams.value.startDate) {
+        params.startDate = analysisParams.value.startDate
+      }
+      
+      if (analysisParams.value.endDate) {
+        params.endDate = analysisParams.value.endDate
+      }
     }
     
     // 调用分析API

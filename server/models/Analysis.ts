@@ -30,24 +30,104 @@ export interface CombinationAnalysis {
 
 export class AnalysisModel {
   // 获取号码频率统计
-  static async getFrequency(ballType: 'red' | 'blue' = 'red'): Promise<NumberFrequency[]> {
+  static async getFrequency(
+    ballType: 'red' | 'blue' = 'red',
+    options?: { limit?: number; startDate?: string; endDate?: string }
+  ): Promise<NumberFrequency[]> {
     const { query } = await import('../utils/database')
 
-    const sql = `
-      SELECT ball_type, ball_number, frequency, last_appearance_issue, last_appearance_date
-      FROM number_frequency
-      WHERE ball_type = ?
-      ORDER BY ball_number
-    `
+    // 如果用户指定了limit、startDate或endDate，则动态计算频率
+    if (options?.limit || options?.startDate || options?.endDate) {
+      const maxNumber = ballType === 'red' ? 33 : 16
+      const frequencyData: NumberFrequency[] = []
 
-    const results = await query(sql, [ballType])
-    return (results as any[]).map(row => ({
-      ballType: row.ball_type,
-      ballNumber: row.ball_number,
-      frequency: row.frequency,
-      lastAppearanceIssue: row.last_appearance_issue,
-      lastAppearanceDate: row.last_appearance_date
-    }))
+      // 基础SQL查询
+      let sql = `
+        SELECT issue, red_ball_1, red_ball_2, red_ball_3, red_ball_4, red_ball_5, red_ball_6, blue_ball, date
+        FROM lottery_results
+      `
+
+      const params: any[] = []
+
+      // 添加日期过滤条件
+      if (options?.startDate || options?.endDate) {
+        if (options.startDate) {
+          sql += ' WHERE date >= ?'
+          params.push(options.startDate)
+        }
+        if (options.endDate) {
+          sql += options.startDate ? ' AND date <= ?' : ' WHERE date <= ?'
+          params.push(options.endDate)
+        }
+      }
+
+      sql += ' ORDER BY issue DESC'
+
+      // 添加limit限制
+      if (options?.limit) {
+        sql += ' LIMIT ?'
+        params.push(options.limit)
+      }
+
+      const results = await query(sql, params) as any[]
+
+      // 初始化频率统计
+      const frequencyMap: { [key: number]: { count: number; lastIssue: string; lastDate: string } } = {}
+      for (let i = 1; i <= maxNumber; i++) {
+        frequencyMap[i] = { count: 0, lastIssue: '', lastDate: '' }
+      }
+
+      // 统计频率
+      results.forEach(row => {
+        if (ballType === 'red') {
+          for (let i = 1; i <= 6; i++) {
+            const ballNumber = row[`red_ball_${i}`]
+            if (frequencyMap[ballNumber]) {
+              frequencyMap[ballNumber].count++
+              frequencyMap[ballNumber].lastIssue = row.issue
+              frequencyMap[ballNumber].lastDate = row.date
+            }
+          }
+        } else {
+          const ballNumber = row.blue_ball
+          if (frequencyMap[ballNumber]) {
+            frequencyMap[ballNumber].count++
+            frequencyMap[ballNumber].lastIssue = row.issue
+            frequencyMap[ballNumber].lastDate = row.date
+          }
+        }
+      })
+
+      // 转换为返回格式
+      for (let i = 1; i <= maxNumber; i++) {
+        frequencyData.push({
+          ballType,
+          ballNumber: i,
+          frequency: frequencyMap[i].count,
+          lastAppearanceIssue: frequencyMap[i].lastIssue,
+          lastAppearanceDate: frequencyMap[i].lastDate
+        })
+      }
+
+      return frequencyData
+    } else {
+      // 如果没有指定过滤条件，使用预计算的频率数据
+      const sql = `
+        SELECT ball_type, ball_number, frequency, last_appearance_issue, last_appearance_date
+        FROM number_frequency
+        WHERE ball_type = ?
+        ORDER BY ball_number
+      `
+
+      const results = await query(sql, [ballType])
+      return (results as any[]).map(row => ({
+        ballType: row.ball_type,
+        ballNumber: row.ball_number,
+        frequency: row.frequency,
+        lastAppearanceIssue: row.last_appearance_issue,
+        lastAppearanceDate: row.last_appearance_date
+      }))
+    }
   }
 
   // 更新号码频率统计
@@ -59,22 +139,41 @@ export class AnalysisModel {
   }
 
   // 获取号码趋势
-  static async getTrend(ballType: 'red' | 'blue' = 'red', limit: number = 20): Promise<NumberTrend[]> {
+  static async getTrend(
+    ballType: 'red' | 'blue' = 'red',
+    limit: number = 20,
+    options?: { startDate?: string; endDate?: string }
+  ): Promise<NumberTrend[]> {
     const { query } = await import('../utils/database')
 
     const maxNumber = ballType === 'red' ? 33 : 16
 
     const trends: NumberTrend[] = []
 
-    // 获取最近limit期的数据
-    const sql = `
+    // 基础SQL查询
+    let sql = `
       SELECT issue, red_ball_1, red_ball_2, red_ball_3, red_ball_4, red_ball_5, red_ball_6, blue_ball
       FROM lottery_results
-      ORDER BY issue DESC
-      LIMIT ?
     `
 
-    const results = await query(sql, [limit])
+    const params: any[] = []
+
+    // 添加日期过滤条件
+    if (options?.startDate || options?.endDate) {
+      if (options.startDate) {
+        sql += ' WHERE date >= ?'
+        params.push(options.startDate)
+      }
+      if (options.endDate) {
+        sql += options.startDate ? ' AND date <= ?' : ' WHERE date <= ?'
+        params.push(options.endDate)
+      }
+    }
+
+    sql += ' ORDER BY issue DESC LIMIT ?'
+    params.push(limit)
+
+    const results = await query(sql, params)
     const history = results as any[]
 
     // 为每个号码计算趋势
@@ -133,18 +232,38 @@ export class AnalysisModel {
   }
 
   // 获取冷热号分析
-  static async getColdHotAnalysis(hotThreshold: number = 3, coldThreshold: number = 30): Promise<ColdHotAnalysis> {
+  static async getColdHotAnalysis(
+    hotThreshold: number = 3,
+    coldThreshold: number = 30,
+    options?: { limit?: number; startDate?: string; endDate?: string }
+  ): Promise<ColdHotAnalysis> {
     const { query } = await import('../utils/database')
 
-    // 获取最近10期的数据
-    const recentSql = `
+    // 基础SQL查询
+    let recentSql = `
       SELECT red_ball_1, red_ball_2, red_ball_3, red_ball_4, red_ball_5, red_ball_6, blue_ball
       FROM lottery_results
-      ORDER BY issue DESC
-      LIMIT 10
     `
 
-    const recentResults = await query(recentSql) as any[]
+    const params: any[] = []
+
+    // 添加日期过滤条件
+    if (options?.startDate || options?.endDate) {
+      if (options.startDate) {
+        recentSql += ' WHERE date >= ?'
+        params.push(options.startDate)
+      }
+      if (options.endDate) {
+        recentSql += options.startDate ? ' AND date <= ?' : ' WHERE date <= ?'
+        params.push(options.endDate)
+      }
+    }
+
+    const limit = options?.limit || 10
+    recentSql += ' ORDER BY issue DESC LIMIT ?'
+    params.push(limit)
+
+    const recentResults = await query(recentSql, params) as any[]
 
     // 统计红球出现次数
     const redCount: { [key: number]: number } = {}
@@ -265,18 +384,36 @@ export class AnalysisModel {
   }
 
   // 获取组合分析
-  static async getCombinationAnalysis(limit: number = 100): Promise<CombinationAnalysis> {
+  static async getCombinationAnalysis(
+    limit: number = 100,
+    options?: { startDate?: string; endDate?: string }
+  ): Promise<CombinationAnalysis> {
     const { query } = await import('../utils/database')
 
-    // 获取最近limit期的数据
-    const sql = `
+    // 基础SQL查询
+    let sql = `
       SELECT red_ball_1, red_ball_2, red_ball_3, red_ball_4, red_ball_5, red_ball_6, blue_ball
       FROM lottery_results
-      ORDER BY issue DESC
-      LIMIT ?
     `
 
-    const results = await query(sql, [limit]) as any[]
+    const params: any[] = []
+
+    // 添加日期过滤条件
+    if (options?.startDate || options?.endDate) {
+      if (options.startDate) {
+        sql += ' WHERE date >= ?'
+        params.push(options.startDate)
+      }
+      if (options.endDate) {
+        sql += options.startDate ? ' AND date <= ?' : ' WHERE date <= ?'
+        params.push(options.endDate)
+      }
+    }
+
+    sql += ' ORDER BY issue DESC LIMIT ?'
+    params.push(limit)
+
+    const results = await query(sql, params) as any[]
 
     // 初始化统计数据
     const oddEven: { [key: string]: number } = {}
