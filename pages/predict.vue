@@ -1,12 +1,10 @@
 <template>
   <div class="space-y-6">
     <!-- 全局加载指示器 -->
-    <div v-if="historyLoading" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 shadow-xl">
-        <div class="flex items-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
-          <span class="text-gray-700">加载中...</span>
-        </div>
+    <div v-if="historyLoading" class="fixed top-4 right-4 z-50 pointer-events-none">
+      <div class="bg-white rounded-lg shadow-lg p-4 flex items-center">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mr-3"></div>
+        <span class="text-gray-700 text-sm">加载中...</span>
       </div>
     </div>
     <!-- 页面标题 -->
