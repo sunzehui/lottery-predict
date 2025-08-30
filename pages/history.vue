@@ -37,6 +37,30 @@
             class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
+        <div>
+          <label for="hasConsecutive" class="block text-sm font-medium text-gray-700">红球连续号码</label>
+          <select
+            id="hasConsecutive"
+            v-model="filters.hasConsecutive"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          >
+            <option value="">全部</option>
+            <option value="true">包含3个连续号码</option>
+            <option value="false">不包含连续号码</option>
+          </select>
+        </div>
+        <div>
+          <label for="hasSpacedConsecutive" class="block text-sm font-medium text-gray-700">红球隔开连续号码</label>
+          <select
+            id="hasSpacedConsecutive"
+            v-model="filters.hasSpacedConsecutive"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          >
+            <option value="">全部</option>
+            <option value="true">包含3个隔开连续号码</option>
+            <option value="false">不包含隔开连续号码</option>
+          </select>
+        </div>
         <div class="flex items-end">
           <button
             @click="searchData"
@@ -81,7 +105,10 @@
                   <span
                     v-for="ball in getRedBalls(item)"
                     :key="ball"
-                    class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                    :class="[
+                      'w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
+                      isInConsecutiveGroup(item, ball) || isInSpacedConsecutiveGroup(item, ball) ? 'bg-yellow-500' : 'bg-red-500'
+                    ]"
                   >
                     {{ ball }}
                   </span>
@@ -149,7 +176,10 @@
                 <span
                   v-for="ball in getRedBalls(item)"
                   :key="ball"
-                  class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                  :class="[
+                    'w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
+                    isInConsecutiveGroup(item, ball) || isInSpacedConsecutiveGroup(item, ball) ? 'bg-yellow-500' : 'bg-red-500'
+                  ]"
                 >
                   {{ ball }}
                 </span>
@@ -297,7 +327,10 @@
                         <span
                           v-for="ball in getRedBalls(selectedItem)"
                           :key="ball"
-                          class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                          :class="[
+                            'w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
+                            isInConsecutiveGroup(selectedItem, ball) || isInSpacedConsecutiveGroup(selectedItem, ball) ? 'bg-yellow-500' : 'bg-red-500'
+                          ]"
                         >
                           {{ ball }}
                         </span>
@@ -441,7 +474,9 @@ const errorStore = useErrorStore()
 const filters = ref({
   issue: '',
   startDate: '',
-  endDate: ''
+  endDate: '',
+  hasConsecutive: '',
+  hasSpacedConsecutive: ''
 })
 
 // 数据和分页
@@ -483,6 +518,90 @@ const getRedBalls = (item) => {
     item.redBalls[4],
     item.redBalls[5]
   ].sort((a, b) => a - b)
+}
+
+// 检测是否有3个连续号码
+const hasConsecutiveNumbers = (item) => {
+  const redBalls = getRedBalls(item)
+  
+  for (let i = 0; i < redBalls.length - 2; i++) {
+    // 检查是否有3个连续号码
+    if (redBalls[i] + 1 === redBalls[i + 1] && redBalls[i + 1] + 1 === redBalls[i + 2]) {
+      return true
+    }
+  }
+  
+  return false
+}
+
+// 获取连续的3个号码
+const getConsecutiveNumbers = (item) => {
+  const redBalls = getRedBalls(item)
+  const consecutiveGroups = []
+  
+  for (let i = 0; i < redBalls.length - 2; i++) {
+    // 检查是否有3个连续号码
+    if (redBalls[i] + 1 === redBalls[i + 1] && redBalls[i + 1] + 1 === redBalls[i + 2]) {
+      consecutiveGroups.push([redBalls[i], redBalls[i + 1], redBalls[i + 2]])
+    }
+  }
+  
+  return consecutiveGroups
+}
+
+// 检测是否有3个隔开连续号码（如 13 15 17，2 4 6）
+const hasSpacedConsecutiveNumbers = (item) => {
+  const redBalls = getRedBalls(item)
+  
+  for (let i = 0; i < redBalls.length - 2; i++) {
+    // 检查是否有3个隔开连续号码（间隔为1）
+    if (redBalls[i] + 2 === redBalls[i + 1] && redBalls[i + 1] + 2 === redBalls[i + 2]) {
+      return true
+    }
+  }
+  
+  return false
+}
+
+// 获取隔开连续的3个号码
+const getSpacedConsecutiveNumbers = (item) => {
+  const redBalls = getRedBalls(item)
+  const spacedConsecutiveGroups = []
+  
+  for (let i = 0; i < redBalls.length - 2; i++) {
+    // 检查是否有3个隔开连续号码（间隔为1）
+    if (redBalls[i] + 2 === redBalls[i + 1] && redBalls[i + 1] + 2 === redBalls[i + 2]) {
+      spacedConsecutiveGroups.push([redBalls[i], redBalls[i + 1], redBalls[i + 2]])
+    }
+  }
+  
+  return spacedConsecutiveGroups
+}
+
+// 检查号码是否在隔开连续号码组中
+const isInSpacedConsecutiveGroup = (item, ball) => {
+  const spacedConsecutiveGroups = getSpacedConsecutiveNumbers(item)
+  
+  for (const group of spacedConsecutiveGroups) {
+    if (group.includes(ball)) {
+      return true
+    }
+  }
+  
+  return false
+}
+
+// 检查号码是否在连续号码组中
+const isInConsecutiveGroup = (item, ball) => {
+  const consecutiveGroups = getConsecutiveNumbers(item)
+  
+  for (const group of consecutiveGroups) {
+    if (group.includes(ball)) {
+      return true
+    }
+  }
+  
+  return false
 }
 
 // 格式化金额

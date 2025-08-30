@@ -10,6 +10,8 @@ export default defineEventHandler(async (event) => {
     const issue = query.issue as string
     const startDate = query.startDate as string
     const endDate = query.endDate as string
+    const hasConsecutive = query.hasConsecutive as string
+    const hasSpacedConsecutive = query.hasSpacedConsecutive as string
 
     // 获取历史数据
     const result = await LotteryResultModel.getList({
@@ -17,7 +19,9 @@ export default defineEventHandler(async (event) => {
       size,
       issue,
       startDate,
-      endDate
+      endDate,
+      hasConsecutive,
+      hasSpacedConsecutive
     })
 
     return {

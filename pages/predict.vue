@@ -42,6 +42,17 @@
           >
             生成多组
           </button>
+          <button
+            @click="activeTab = 'analyze'"
+            :class="[
+              activeTab === 'analyze'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+              'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+            ]"
+          >
+            号码分析
+          </button>
         </nav>
       </div>
       
@@ -170,6 +181,62 @@
             </p>
           </div>
         </div>
+        
+        <!-- 号码分析 -->
+        <div v-if="activeTab === 'analyze'" class="space-y-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="sm:col-span-2">
+              <label for="redBalls" class="block text-sm font-medium text-gray-700">红球号码</label>
+              <div class="mt-1">
+                <input
+                  type="text"
+                  id="redBalls"
+                  v-model="analyzeParams.redBalls"
+                  placeholder="请输入6个红球，可用逗号/句点/斜杠分隔（如：1,2.3/4,5,6）"
+                  class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                />
+              </div>
+              <p class="mt-1 text-xs text-gray-500">请输入6个1-33之间的红球号码，可用逗号、句点或斜杠分隔</p>
+            </div>
+            <div>
+              <label for="blueBall" class="block text-sm font-medium text-gray-700">蓝球号码</label>
+              <div class="mt-1">
+                <input
+                  type="text"
+                  id="blueBall"
+                  v-model="analyzeParams.blueBall"
+                  placeholder="请输入1个蓝球"
+                  class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                />
+              </div>
+              <p class="mt-1 text-xs text-gray-500">请输入1个1-16之间的蓝球号码</p>
+            </div>
+            <div>
+
+              <label for="blueBall" class="block text-sm font-medium text-gray-700"><br/></label>
+              <div class="mt-1">
+              <button
+                @click="analyzeNumbers"
+                :disabled="analyzeLoading || !analyzeParams.redBalls || !analyzeParams.blueBall"
+                class="w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              >
+                {{ analyzeLoading ? '分析中...' : '分析号码' }}
+              </button>
+
+              </div>
+
+              <p class="mt-1 text-xs text-gray-500"></p>
+            </div>
+          </div>
+          
+          <!-- 分析说明 -->
+          <div class="mt-4 p-4 bg-gray-50 rounded-md">
+            <h3 class="text-sm font-medium text-gray-900 mb-2">功能说明</h3>
+            <p class="text-sm text-gray-600">
+              号码分析：基于历史近100期开奖数据，析您输入的号码组合的出现频率和概率。这可以帮助您了解这组号码在历史上的表现情况。
+            </p>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -231,6 +298,226 @@
           <button
             @click="clearPredictions"
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            清除结果
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 号码分析结果 -->
+    <div v-if="analysisResult" class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-medium text-gray-900">号码分析结果</h2>
+        <p class="mt-1 text-sm text-gray-500">
+          基于历史数据分析您输入的号码组合
+        </p>
+      </div>
+      
+      <div class="p-6">
+        <!-- 号码展示 -->
+        <div class="flex justify-center mb-6">
+          <div class="flex items-center space-x-2">
+            <div class="flex space-x-1">
+              <span
+                v-for="ball in analysisResult.redBalls"
+                :key="ball"
+                class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold"
+              >
+                {{ ball }}
+              </span>
+            </div>
+            <span class="text-gray-500 text-xl">+</span>
+            <span
+              class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold"
+            >
+              {{ analysisResult.blueBall }}
+            </span>
+          </div>
+        </div>
+        
+        <!-- 分析结果统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" v-if="false"> 
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-sm font-medium text-gray-500 mb-1">出现频率</h3>
+            <p class="text-2xl font-bold text-indigo-600">{{ analysisResult.frequency.toFixed(2) }}%</p>
+            <p class="text-xs text-gray-500 mt-1">在历史数据中的出现频率</p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-sm font-medium text-gray-500 mb-1">历史出现次数</h3>
+            <p class="text-2xl font-bold text-green-600">{{ analysisResult.occurrences }}次</p>
+            <p class="text-xs text-gray-500 mt-1">在所有期数中的出现次数</p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-sm font-medium text-gray-500 mb-1">平均间隔</h3>
+            <p class="text-2xl font-bold text-purple-600">{{ analysisResult.averageInterval }}期</p>
+            <p class="text-xs text-gray-500 mt-1">平均每多少期出现一次</p>
+          </div>
+        </div>
+        
+        <!-- 中奖概率分析 -->
+        <div v-if="analysisResult.prizeProbability" class="mb-6">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">中奖概率分析</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+              <h3 class="text-sm font-medium text-red-700 mb-1">四等奖概率</h3>
+              <p class="text-2xl font-bold text-red-600">{{ analysisResult.prizeProbability.firstPrize.toFixed(6) }}%</p>
+              <p class="text-xs text-gray-500 mt-1">6红球+1蓝球全中</p>
+            </div>
+            <div class="bg-orange-50 p-4 rounded-lg border border-orange-100">
+              <h3 class="text-sm font-medium text-orange-700 mb-1">五等奖概率</h3>
+              <p class="text-2xl font-bold text-orange-600">{{ analysisResult.prizeProbability.secondPrize.toFixed(6) }}%</p>
+              <p class="text-xs text-gray-500 mt-1">6红球中，蓝球不中</p>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+              <h3 class="text-sm font-medium text-yellow-700 mb-1">六等奖概率</h3>
+              <p class="text-2xl font-bold text-yellow-600">{{ analysisResult.prizeProbability.thirdPrize.toFixed(6) }}%</p>
+              <p class="text-xs text-gray-500 mt-1">5红球+1蓝球中</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <h3 class="text-sm font-medium text-green-700 mb-1">小奖概率</h3>
+              <p class="text-2xl font-bold text-green-600">{{ analysisResult.prizeProbability.anyPrize.toFixed(4) }}%</p>
+              <p class="text-xs text-gray-500 mt-1">四五六等奖总概率</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 号码重合度分析 -->
+        <div v-if="analysisResult.matchStatistics" class="mb-6">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">号码重合度分析</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">平均匹配情况</h4>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600">平均红球匹配数</span>
+                  <span class="text-sm font-medium text-indigo-600">{{ analysisResult.matchStatistics.averageRedBallMatches.toFixed(2) }}个</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600">蓝球匹配率</span>
+                  <span class="text-sm font-medium text-blue-600">{{ analysisResult.matchStatistics.blueBallMatchRate.toFixed(2) }}%</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">红球匹配数分布</h4>
+              <div class="space-y-1">
+                <div v-for="(count, matches) in analysisResult.matchStatistics.redBallMatchDistribution" :key="matches" class="flex justify-between text-xs">
+                  <span class="text-gray-600">{{ matches }}个红球匹配</span>
+                  <span class="font-medium">{{ count }}期</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 最近匹配记录 -->
+        <div v-if="analysisResult.matchStatistics && analysisResult.matchStatistics.recentMatches && analysisResult.matchStatistics.recentMatches.length > 0" class="mb-6">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">最近匹配记录</h3>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">期号</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">红球匹配</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">蓝球匹配</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">奖项等级</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="match in analysisResult.matchStatistics.recentMatches" :key="match.issue">
+                    <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">第 {{ match.issue }} 期</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ formatDate(match.date) }}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ match.redBallMatches }}个</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm">
+                      <span v-if="match.blueBallMatch" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">是</span>
+                      <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">否</span>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm">
+                      <span v-if="match.prizeLevel" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                            :class="getPrizeLevelClass(match.prizeLevel, true)">
+                        {{ match.prizeLevel }}
+                      </span>
+                      <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">未中奖</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 最近出现记录 -->
+        <div v-if="analysisResult.recentOccurrences && analysisResult.recentOccurrences.length > 0" class="mb-6">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">最近出现记录</h3>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div
+                v-for="occurrence in analysisResult.recentOccurrences.slice(0, 6)"
+                :key="occurrence.issue"
+                class="flex items-center justify-between p-2 bg-white rounded border"
+              >
+                <span class="text-sm font-medium">第 {{ occurrence.issue }} 期</span>
+                <span class="text-xs text-gray-500">{{ formatDate(occurrence.date) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 号码频率分析 -->
+        <div class="mb-6">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">号码频率分析</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">红球频率</h4>
+              <div class="space-y-2">
+                <div
+                  v-for="ball in analysisResult.redBallFrequency"
+                  :key="ball.number"
+                  class="flex items-center"
+                >
+                  <span class="text-sm w-8 h-8 rounded-full bg-red-100 text-red-800 flex items-center justify-center mr-2">
+                    {{ ball.number }}
+                  </span>
+                  <div class="flex-1">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        class="bg-red-500 h-2 rounded-full"
+                        :style="`width: ${ball.frequencyPercentage}%`"
+                      ></div>
+                    </div>
+                  </div>
+                  <span class="text-xs text-gray-500 ml-2 w-12">{{ ball.frequencyPercentage.toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">蓝球频率</h4>
+              <div class="flex items-center">
+                <span class="text-sm w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center mr-2">
+                  {{ analysisResult.blueBallFrequency.number }}
+                </span>
+                <div class="flex-1">
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      class="bg-blue-500 h-2 rounded-full"
+                      :style="`width: ${analysisResult.blueBallFrequency.frequencyPercentage}%`"
+                    ></div>
+                  </div>
+                </div>
+                <span class="text-xs text-gray-500 ml-2 w-12">{{ analysisResult.blueBallFrequency.frequencyPercentage.toFixed(1) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="clearAnalysisResult"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             清除结果
           </button>
@@ -417,7 +704,7 @@ useHead({
 import { useErrorStore } from '~/stores/errorStore'
 import { useToastStore } from '~/stores/toastStore'
 import { getWithTimeout, postWithTimeout } from '~/utils/apiUtils'
-import { computed, nextTick, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 // 浏览器兼容性检测和平滑滚动工具函数
 const scrollUtils = {
@@ -579,6 +866,14 @@ const issueFilter = ref({
 const availableIssues = ref([])
 const issuesLoading = ref(false)
 
+// 号码分析相关
+const analyzeParams = ref({
+  redBalls: '',
+  blueBall: ''
+})
+const analyzeLoading = ref(false)
+const analysisResult = ref(null)
+
 // 获取算法名称
 const getAlgorithmName = (algorithm) => {
   const algorithmMap = {
@@ -656,6 +951,15 @@ const getPrizeLevelClass = (prizeLevel, hasResult = true) => {
   if (!hasResult) return 'bg-yellow-100 text-yellow-800'
   if (!prizeLevel) return 'bg-gray-100 text-gray-800'
   
+  // 如果是字符串，提取数字部分
+  let level = prizeLevel
+  if (typeof prizeLevel === 'string') {
+    const match = prizeLevel.match(/(\d+)/)
+    if (match) {
+      level = parseInt(match[1])
+    }
+  }
+  
   const prizeClasses = {
     1: 'bg-red-100 text-red-800',
     2: 'bg-orange-100 text-orange-800',
@@ -665,7 +969,7 @@ const getPrizeLevelClass = (prizeLevel, hasResult = true) => {
     6: 'bg-purple-100 text-purple-800'
   }
   
-  return prizeClasses[prizeLevel] || 'bg-gray-100 text-gray-800'
+  return prizeClasses[level] || 'bg-gray-100 text-gray-800'
 }
 
 // 生成单组预测
@@ -982,6 +1286,78 @@ const closeVideoModal = () => {
     videoPlayer.value.pause()
     videoPlayer.value.currentTime = 0
   }
+}
+
+// 分析号码
+const analyzeNumbers = async () => {
+  // 验证输入
+  // 支持用逗号、句点或斜杠分隔红球号码
+  const redBallsArray = analyzeParams.value.redBalls
+    .split(/[,.\/]/) // 使用正则表达式分割多种分隔符
+    .map(ball => parseInt(ball.trim()))
+    .filter(ball => !isNaN(ball))
+  const blueBall = parseInt(analyzeParams.value.blueBall)
+  
+  if (redBallsArray.length !== 6) {
+    toastStore.showError('请输入6个有效的红球号码')
+    return
+  }
+  
+  if (isNaN(blueBall) || blueBall < 1 || blueBall > 16) {
+    toastStore.showError('请输入1个有效的蓝球号码（1-16）')
+    return
+  }
+  
+  // 验证红球号码范围
+  for (const ball of redBallsArray) {
+    if (isNaN(ball) || ball < 1 || ball > 33) {
+      toastStore.showError('红球号码必须在1-33之间')
+      return
+    }
+  }
+  
+  // 验证红球号码是否重复
+  const uniqueRedBalls = new Set(redBallsArray)
+  if (uniqueRedBalls.size !== redBallsArray.length) {
+    toastStore.showError('红球号码不能重复')
+    return
+  }
+  
+  analyzeLoading.value = true
+  try {
+    // 构建查询参数
+    const queryParams = new URLSearchParams()
+    redBallsArray.sort((a, b) => a - b).forEach(ball => {
+      queryParams.append('redBalls', ball.toString())
+    })
+    queryParams.append('blueBall', blueBall.toString())
+    
+    const response = await getWithTimeout(`/api/lottery/analyze?${queryParams.toString()}`)
+    
+    if (response.success) {
+      analysisResult.value = response.data
+      
+      // 滚动到分析结果区域
+      nextTick(() => {
+        const resultsElement = document.querySelector('.bg-white.shadow.rounded-lg.overflow-hidden')
+        if (resultsElement) {
+          scrollUtils.scrollToElement(resultsElement, { behavior: 'smooth', block: 'start' })
+        }
+      })
+    } else {
+      toastStore.showError('分析号码失败')
+    }
+  } catch (error) {
+    errorStore.handleApiError(error)
+    toastStore.showError('分析号码失败，请重试')
+  } finally {
+    analyzeLoading.value = false
+  }
+}
+
+// 清除分析结果
+const clearAnalysisResult = () => {
+  analysisResult.value = null
 }
 </script>
 
