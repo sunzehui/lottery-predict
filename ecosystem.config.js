@@ -9,9 +9,9 @@ module.exports = {
         NODE_ENV: 'production',
         DB_HOST: '127.0.0.1',
         DB_PORT: 3306,
-        DB_USER: 'predict_hui_zone',
-        DB_PASSWORD: 'predict_hui_zone',
-        DB_NAME: 'predict_hui_zone',
+        DB_USER: 'lottery',
+        DB_PASSWORD: 'lottery',
+        DB_NAME: 'lottery',
         ADMIN_PASSWORD: 'admin123'
       },
       log_file: './logs/combined.log',
