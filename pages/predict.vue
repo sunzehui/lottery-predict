@@ -257,9 +257,21 @@
         >
           <div class="flex justify-between items-start mb-3">
             <span class="text-sm font-medium text-gray-500">方案 {{ index + 1 }}</span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              置信度: {{ prediction.confidence.toFixed(1) }}%
-            </span>
+            <div class="flex items-center space-x-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                置信度: {{ prediction.confidence.toFixed(1) }}%
+              </span>
+              <button
+                @click="toggleFavorite(prediction)"
+                class="text-gray-400 hover:text-yellow-500 focus:outline-none"
+                :class="{ 'text-yellow-500': isFavorite(prediction) }"
+              >
+                <svg class="w-5 h-5" :class="{ 'fill-current': isFavorite(prediction) }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path v-if="!isFavorite(prediction)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </button>
+            </div>
           </div>
           
           <div class="flex items-center space-x-2 mb-2">
@@ -680,7 +692,11 @@
             ref="videoPlayer"
             class="w-full h-auto rounded-lg"
             autoplay
+            playsinline
+            webkit-playsinline
+            x5-playsinline
             @ended="onVideoEnded"
+            preload="auto"
           >
             <source src="/soothsayer.mp4" type="video/mp4">
             您的浏览器不支持视频播放。
@@ -834,6 +850,65 @@ const params = computed(() => {
 const predictions = ref([])
 const loading = ref(false)
 
+// 收藏的预测结果
+const favoritePredictions = ref([])
+
+// 从本地存储加载收藏的预测结果
+const loadFavorites = () => {
+  try {
+    const saved = localStorage.getItem('favoritePredictions')
+    if (saved) {
+      favoritePredictions.value = JSON.parse(saved)
+    }
+  } catch (error) {
+    console.error('加载收藏预测失败:', error)
+    favoritePredictions.value = []
+  }
+}
+
+// 保存收藏的预测结果到本地存储
+const saveFavorites = () => {
+  try {
+    localStorage.setItem('favoritePredictions', JSON.stringify(favoritePredictions.value))
+  } catch (error) {
+    console.error('保存收藏预测失败:', error)
+  }
+}
+
+// 检查预测是否已收藏
+const isFavorite = (prediction) => {
+  return favoritePredictions.value.some(fav =>
+    fav.issue === prediction.issue &&
+    fav.redBalls.join(',') === prediction.redBalls.join(',') &&
+    fav.blueBall === prediction.blueBall
+  )
+}
+
+// 切换收藏状态
+const toggleFavorite = (prediction) => {
+  const index = favoritePredictions.value.findIndex(fav =>
+    fav.issue === prediction.issue &&
+    fav.redBalls.join(',') === prediction.redBalls.join(',') &&
+    fav.blueBall === prediction.blueBall
+  )
+  
+  if (index === -1) {
+    // 添加到收藏
+    favoritePredictions.value.push({
+      ...prediction,
+      favoriteDate: new Date().toISOString()
+    })
+    toastStore.showSuccess('已添加到收藏')
+  } else {
+    // 从收藏中移除
+    favoritePredictions.value.splice(index, 1)
+    toastStore.showSuccess('已取消收藏')
+  }
+  
+  // 保存到本地存储
+  saveFavorites()
+}
+
 // 历史预测记录
 const historyData = ref([])
 const historyLoading = ref(false)
@@ -858,6 +933,7 @@ const observer = ref(null)
 // 视频弹框相关
 const showVideoModal = ref(false)
 const videoPlayer = ref(null)
+const preloadedVideo = ref(null)
 
 // 期数过滤相关
 const issueFilter = ref({
@@ -1245,10 +1321,52 @@ const setupInfiniteScroll = () => {
   }
 }
 
+// 预加载视频
+const preloadVideo = () => {
+  try {
+    // 创建隐藏的video元素进行预加载
+    preloadedVideo.value = document.createElement('video')
+    preloadedVideo.value.preload = 'auto'
+    preloadedVideo.value.playsinline = true
+    preloadedVideo.value.setAttribute('playsinline', '')
+    preloadedVideo.value.setAttribute('webkit-playsinline', '')
+    preloadedVideo.value.setAttribute('x5-playsinline', '')
+    preloadedVideo.value.style.display = 'none'
+    
+    const source = document.createElement('source')
+    source.src = '/soothsayer.mp4'
+    source.type = 'video/mp4'
+    
+    preloadedVideo.value.appendChild(source)
+    document.body.appendChild(preloadedVideo.value)
+    
+    // 视频加载完成后移除DOM元素，但保留在缓存中
+    preloadedVideo.value.addEventListener('canplaythrough', () => {
+      console.log('视频预加载完成')
+      // 可以选择保留在DOM中或者移除
+      // document.body.removeChild(preloadedVideo.value)
+    })
+    
+    // 处理加载错误
+    preloadedVideo.value.addEventListener('error', (e) => {
+      console.warn('视频预加载失败:', e)
+      if (document.body.contains(preloadedVideo.value)) {
+        document.body.removeChild(preloadedVideo.value)
+      }
+    })
+  } catch (error) {
+    console.error('创建预加载视频元素失败:', error)
+  }
+}
+
 // 页面加载时获取历史预测记录、可用期数和设置无限滚动
 onMounted(() => {
   fetchHistoryData()
   fetchAvailableIssues()
+  loadFavorites() // 加载收藏的预测结果
+  
+  // 预加载视频
+  preloadVideo()
   
   // 在下一个tick中设置无限滚动，确保DOM已渲染
   nextTick(() => {
@@ -1260,6 +1378,11 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer.value) {
     observer.value.disconnect()
+  }
+  
+  // 清理预加载的视频元素
+  if (preloadedVideo.value && document.body.contains(preloadedVideo.value)) {
+    document.body.removeChild(preloadedVideo.value)
   }
 })
 

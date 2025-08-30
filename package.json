@@ -32,7 +32,7 @@
     "@pinia/nuxt": "^0.5.1",
     "axios": "^1.11.0",
     "chart.js": "^4.4.0",
-    "cheerio": "^1.1.2",
+    "cheerio": "1.1.0",
     "mysql2": "^3.6.1",
     "pinia": "^2.1.6",
     "vue-chartjs": "^5.2.0"

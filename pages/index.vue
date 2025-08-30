@@ -40,6 +40,73 @@
       </div>
     </div>
     
+    <!-- 收藏的预测结果 -->
+    <div v-if="favoritePredictions.length > 0" class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="px-4 py-4 sm:py-5 sm:p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-base sm:text-lg font-medium text-gray-900">我的收藏预测</h3>
+          <span class="text-xs sm:text-sm text-gray-500">{{ favoritePredictions.length }} 个收藏</span>
+        </div>
+        
+        <div class="grid grid-cols-1 gap-3 sm:gap-4">
+          <div
+            v-for="(prediction, index) in favoritePredictions"
+            :key="index"
+            class="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow duration-300"
+          >
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <h4 class="text-sm font-medium text-gray-900">第 {{ prediction.issue }} 期</h4>
+                <p class="text-xs text-gray-500">{{ formatDate(prediction.predictDate) }}</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span
+                  :class="getPrizeLevelClass(prediction.prizeLevel, prediction.hasResult)"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                >
+                  {{ getPrizeLevelText(prediction.prizeLevel, prediction.hasResult) }}
+                </span>
+                <button
+                  @click="removeFavorite(index)"
+                  class="text-gray-400 hover:text-red-500 focus:outline-none"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 mb-2">
+              <div class="flex space-x-1">
+                <span
+                  v-for="ball in prediction.redBalls"
+                  :key="ball"
+                  class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold"
+                >
+                  {{ ball }}
+                </span>
+              </div>
+              <span class="text-gray-500">+</span>
+              <span
+                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold"
+              >
+                {{ prediction.blueBall }}
+              </span>
+            </div>
+            
+            <div class="flex justify-between items-center text-xs text-gray-500">
+              <div>
+                <span class="font-medium">算法:</span> {{ getAlgorithmName(prediction.algorithm) }}
+              </div>
+              <div>
+                <span class="font-medium">置信度:</span> {{ prediction.confidence.toFixed(1) }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- 功能卡片 -->
     <div class="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <!-- 历史数据卡片 -->
@@ -163,6 +230,7 @@
         </div>
       </div>
     </div>
+    
   </div>
 </template>
 
@@ -175,9 +243,183 @@ useHead({
 // 获取最新开奖结果
 const latestResult = ref(null)
 
-// 页面加载时获取最新开奖结果
+// 收藏的预测结果
+const favoritePredictions = ref([])
+
+// 开奖结果数据
+const lotteryResults = ref({})
+
+// 从本地存储加载收藏的预测结果
+const loadFavorites = () => {
+  try {
+    const saved = localStorage.getItem('favoritePredictions')
+    if (saved) {
+      favoritePredictions.value = JSON.parse(saved)
+      // 加载收藏后，获取开奖结果
+      fetchLotteryResults()
+    }
+  } catch (error) {
+    console.error('加载收藏预测失败:', error)
+    favoritePredictions.value = []
+  }
+}
+
+// 保存收藏的预测结果到本地存储
+const saveFavorites = () => {
+  try {
+    localStorage.setItem('favoritePredictions', JSON.stringify(favoritePredictions.value))
+  } catch (error) {
+    console.error('保存收藏预测失败:', error)
+  }
+}
+
+// 移除收藏
+const removeFavorite = (index) => {
+  favoritePredictions.value.splice(index, 1)
+  saveFavorites()
+}
+
+// 获取算法名称
+const getAlgorithmName = (algorithm) => {
+  const algorithmMap = {
+    'frequency': '频率分析',
+    'trend': '趋势分析',
+    'coldHot': '冷热号分析',
+    'mixed': '综合算法'
+  }
+  return algorithmMap[algorithm] || algorithm
+}
+
+// 格式化日期为本地时间（年月日 周一）
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  
+  const date = new Date(dateString)
+  
+  // 检查日期是否有效
+  if (isNaN(date.getTime())) return dateString
+  
+  // 获取年月日
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  
+  // 获取星期几
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const weekday = weekdays[date.getDay()]
+  
+  return `${year}年${month}月${day}日（${weekday}）`
+}
+
+// 计算中奖等级
+const calculatePrizeLevel = (prediction, result) => {
+  if (!result) return null
+  
+  const redHits = prediction.redBalls.filter(ball => result.redBalls.includes(ball)).length
+  const blueHit = prediction.blueBall === result.blueBall
+  
+  // 双色球中奖规则
+  if (redHits === 6 && blueHit) return 1
+  if (redHits === 6 && !blueHit) return 2
+  if (redHits === 5 && blueHit) return 3
+  if (redHits === 5 || (redHits === 4 && blueHit)) return 4
+  if (redHits === 4 || (redHits === 3 && blueHit)) return 5
+  if ((redHits === 2 && blueHit) || (redHits === 1 && blueHit) || (redHits === 0 && blueHit)) return 6
+  
+  return null
+}
+
+// 获取中奖等级文本
+const getPrizeLevelText = (prizeLevel, hasResult = true) => {
+  if (!hasResult) return '等待开奖'
+  if (!prizeLevel) return '未中奖'
+  
+  const prizeTexts = {
+    1: '一等奖',
+    2: '二等奖',
+    3: '三等奖',
+    4: '四等奖',
+    5: '五等奖',
+    6: '六等奖'
+  }
+  
+  return prizeTexts[prizeLevel] || '未中奖'
+}
+
+// 获取中奖等级样式类
+const getPrizeLevelClass = (prizeLevel, hasResult = true) => {
+  if (!hasResult) return 'bg-yellow-100 text-yellow-800'
+  if (!prizeLevel) return 'bg-gray-100 text-gray-800'
+  
+  // 如果是字符串，提取数字部分
+  let level = prizeLevel
+  if (typeof prizeLevel === 'string') {
+    const match = prizeLevel.match(/(\d+)/)
+    if (match) {
+      level = parseInt(match[1])
+    }
+  }
+  
+  const prizeClasses = {
+    1: 'bg-red-100 text-red-800',
+    2: 'bg-orange-100 text-orange-800',
+    3: 'bg-yellow-100 text-yellow-800',
+    4: 'bg-green-100 text-green-800',
+    5: 'bg-blue-100 text-blue-800',
+    6: 'bg-purple-100 text-purple-800'
+  }
+  
+  return prizeClasses[level] || 'bg-gray-100 text-gray-800'
+}
+
+// 获取开奖结果
+const fetchLotteryResults = async () => {
+  // 获取所有期号
+  const issues = [...new Set(favoritePredictions.value.map(p => p.issue))]
+  
+  if (issues.length === 0) return
+  
+  try {
+    // 使用 Promise.all 并行获取所有期号的结果
+    const resultPromises = issues.map(issue =>
+      $fetch('/api/lottery/history', {
+        params: {
+          issue,
+          size: 1
+        }
+      }).catch(error => {
+        console.warn(`获取期号 ${issue} 的开奖结果失败:`, error)
+        return { success: false, data: [] }
+      })
+    )
+    
+    const results = await Promise.all(resultPromises)
+    
+    // 处理结果
+    results.forEach((resultResponse, index) => {
+      if (resultResponse.success && resultResponse.data.length > 0) {
+        lotteryResults.value[issues[index]] = resultResponse.data[0]
+      }
+    })
+    
+    // 计算每个预测的中奖等级
+    favoritePredictions.value.forEach(prediction => {
+      const result = lotteryResults.value[prediction.issue]
+      prediction.prizeLevel = result ? calculatePrizeLevel(prediction, result) : null
+      prediction.hasResult = !!result
+    })
+    
+    // 更新本地存储
+    saveFavorites()
+  } catch (error) {
+    console.warn('批量获取开奖结果失败:', error)
+  }
+}
+
+// 页面加载时获取最新开奖结果和收藏预测
 onMounted(async () => {
   try {
+    // 获取最新开奖结果
     const response = await $fetch('/api/lottery/history', {
       params: {
         page: 1,
@@ -201,6 +443,9 @@ onMounted(async () => {
         blueBall: data.blueBall
       }
     }
+    
+    // 加载收藏的预测结果
+    loadFavorites()
   } catch (error) {
     console.error('获取最新开奖结果失败:', error)
   }
