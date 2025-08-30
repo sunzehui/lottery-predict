@@ -16,78 +16,165 @@
     <!-- 预测参数设置 -->
     <div class="bg-white shadow rounded-lg p-6">
       <h2 class="text-lg font-medium text-gray-900 mb-4">预测参数</h2>
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <label for="algorithm" class="block text-sm font-medium text-gray-700">预测算法</label>
-          <div class="mt-1 relative">
-            <select
-              id="algorithm"
-              v-model="params.algorithm"
-              class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            >
-              <option value="frequency">频率分析</option>
-              <option value="trend">趋势分析</option>
-              <option value="coldHot">冷热号分析</option>
-              <option value="mixed">综合算法</option>
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-        <div>
-          <label for="count" class="block text-sm font-medium text-gray-700">预测组数</label>
-          <div class="mt-1 relative">
-            <select
-              id="count"
-              v-model="params.count"
-              class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            >
-              <option :value="1">1组</option>
-              <option :value="3">3组</option>
-              <option :value="5">5组</option>
-              <option :value="10">10组</option>
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-end">
+      
+      <!-- Tab 导航 -->
+      <div class="border-b border-gray-200 mb-4">
+        <nav class="-mb-px flex space-x-8">
           <button
-            @click="generatePrediction"
-            :disabled="loading"
-            class="w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            @click="activeTab = 'single'"
+            :class="[
+              activeTab === 'single'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+              'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+            ]"
           >
-            {{ loading ? '生成中...' : '生成预测' }}
+            生成一组
           </button>
-        </div>
+          <button
+            @click="activeTab = 'multiple'"
+            :class="[
+              activeTab === 'multiple'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+              'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+            ]"
+          >
+            生成多组
+          </button>
+        </nav>
       </div>
       
-      <!-- 算法说明 -->
-      <div class="mt-4 p-4 bg-gray-50 rounded-md">
-        <h3 class="text-sm font-medium text-gray-900 mb-2">算法说明</h3>
-        <p class="text-sm text-gray-600" v-if="params.algorithm === 'frequency'">
-          频率分析：基于历史数据中各号码出现的频率，选择高频号码进行组合。高频号码在近期有较高的出现概率。
-        </p>
-        <p class="text-sm text-gray-600" v-else-if="params.algorithm === 'trend'">
-          趋势分析：分析号码的出现趋势，选择处于上升趋势的号码。考虑号码近期出现频率的变化情况。
-        </p>
-        <p class="text-sm text-gray-600" v-else-if="params.algorithm === 'coldHot'">
-          冷热号分析：结合热号（近期频繁出现）和冷号（长期未出现）进行组合。热号有持续热度，冷号有回补可能。
-        </p>
-        <p class="text-sm text-gray-600" v-else-if="params.algorithm === 'mixed'">
-          综合算法：结合频率分析、趋势分析和冷热号分析，按照不同权重综合计算得出预测结果。
-        </p>
+      <!-- Tab 内容 -->
+      <div>
+        <!-- 生成一组 -->
+        <div v-if="activeTab === 'single'" class="space-y-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label for="algorithm-single" class="block text-sm font-medium text-gray-700">预测算法</label>
+              <div class="mt-1 relative">
+                <select
+                  id="algorithm-single"
+                  v-model="singleParams.algorithm"
+                  class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                >
+                  <option value="frequency">频率分析</option>
+                  <option value="trend">趋势分析</option>
+                  <option value="coldHot">冷热号分析</option>
+                  <option value="mixed">综合算法</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-end">
+              <button
+                @click="generateSinglePrediction"
+                :disabled="loading"
+                class="w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              >
+                {{ loading ? '生成中...' : '生成一组预测' }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- 算法说明 -->
+          <div class="mt-4 p-4 bg-gray-50 rounded-md">
+            <h3 class="text-sm font-medium text-gray-900 mb-2">算法说明</h3>
+            <p class="text-sm text-gray-600" v-if="singleParams.algorithm === 'frequency'">
+              频率分析：基于历史数据中各号码出现的频率，选择高频号码进行组合。高频号码在近期有较高的出现概率。
+            </p>
+            <p class="text-sm text-gray-600" v-else-if="singleParams.algorithm === 'trend'">
+              趋势分析：分析号码的出现趋势，选择处于上升趋势的号码。考虑号码近期出现频率的变化情况。
+            </p>
+            <p class="text-sm text-gray-600" v-else-if="singleParams.algorithm === 'coldHot'">
+              冷热号分析：结合热号（近期频繁出现）和冷号（长期未出现）进行组合。热号有持续热度，冷号有回补可能。
+            </p>
+            <p class="text-sm text-gray-600" v-else-if="singleParams.algorithm === 'mixed'">
+              综合算法：结合频率分析、趋势分析和冷热号分析，按照不同权重综合计算得出预测结果。
+            </p>
+          </div>
+        </div>
+        
+        <!-- 生成多组 -->
+        <div v-if="activeTab === 'multiple'" class="space-y-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label for="algorithm-multiple" class="block text-sm font-medium text-gray-700">预测算法</label>
+              <div class="mt-1 relative">
+                <select
+                  id="algorithm-multiple"
+                  v-model="multipleParams.algorithm"
+                  class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                >
+                  <option value="frequency">频率分析</option>
+                  <option value="trend">趋势分析</option>
+                  <option value="coldHot">冷热号分析</option>
+                  <option value="mixed">综合算法</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label for="count-multiple" class="block text-sm font-medium text-gray-700">预测组数</label>
+              <div class="mt-1 relative">
+                <select
+                  id="count-multiple"
+                  v-model="multipleParams.count"
+                  class="block appearance-none w-full bg-white border border-gray-300 rounded py-2 px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                >
+                  <option :value="1">1组</option>
+                  <option :value="3">3组</option>
+                  <option :value="5">5组</option>
+                  <option :value="10">10组</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-end">
+              <button
+                @click="generateMultiplePrediction"
+                :disabled="loading"
+                class="w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              >
+                {{ loading ? '生成中...' : '生成多组预测' }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- 算法说明 -->
+          <div class="mt-4 p-4 bg-gray-50 rounded-md">
+            <h3 class="text-sm font-medium text-gray-900 mb-2">算法说明</h3>
+            <p class="text-sm text-gray-600" v-if="multipleParams.algorithm === 'frequency'">
+              频率分析：基于历史数据中各号码出现的频率，选择高频号码进行组合。高频号码在近期有较高的出现概率。
+            </p>
+            <p class="text-sm text-gray-600" v-else-if="multipleParams.algorithm === 'trend'">
+              趋势分析：分析号码的出现趋势，选择处于上升趋势的号码。考虑号码近期出现频率的变化情况。
+            </p>
+            <p class="text-sm text-gray-600" v-else-if="multipleParams.algorithm === 'coldHot'">
+              冷热号分析：结合热号（近期频繁出现）和冷号（长期未出现）进行组合。热号有持续热度，冷号有回补可能。
+            </p>
+            <p class="text-sm text-gray-600" v-else-if="multipleParams.algorithm === 'mixed'">
+              综合算法：结合频率分析、趋势分析和冷热号分析，按照不同权重综合计算得出预测结果。
+            </p>
+          </div>
+        </div>
       </div>
     </div>
     
     <!-- 预测结果 -->
-    <div v-if="predictions.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
+    <div v-if="predictions.length > 0" class="bg-white shadow rounded-lg overflow-hidden prediction-results">
       <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-lg font-medium text-gray-900">预测结果</h2>
         <p class="mt-1 text-sm text-gray-500">
@@ -282,6 +369,43 @@
       </div>
     </div>
   </div>
+  
+  <!-- 视频弹框 -->
+  <div v-if="showVideoModal" class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <!-- 背景遮罩 -->
+      <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="closeVideoModal"></div>
+      
+      <!-- 弹框内容 -->
+      <div class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">占卜师正在为您预测...</h3>
+          <button @click="closeVideoModal" class="text-gray-400 hover:text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <!-- 视频播放器 -->
+        <div class="aspect-w-16 aspect-h-9">
+          <video
+            ref="videoPlayer"
+            class="w-full h-auto rounded-lg"
+            autoplay
+            @ended="onVideoEnded"
+          >
+            <source src="/soothsayer.mp4" type="video/mp4">
+            您的浏览器不支持视频播放。
+          </video>
+        </div>
+        
+        <div class="mt-4 text-sm text-gray-500" v-if="false">
+          播放结束后将自动显示预测结果
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -293,16 +417,130 @@ useHead({
 import { useErrorStore } from '~/stores/errorStore'
 import { useToastStore } from '~/stores/toastStore'
 import { getWithTimeout, postWithTimeout } from '~/utils/apiUtils'
-import { nextTick, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onUnmounted, watch } from 'vue'
+
+// 浏览器兼容性检测和平滑滚动工具函数
+const scrollUtils = {
+  // 检测浏览器是否支持现代scrollIntoView选项
+  supportsSmoothScroll: () => {
+    try {
+      const div = document.createElement('div')
+      return 'scrollBehavior' in document.documentElement.style &&
+             typeof div.scrollIntoView === 'function' &&
+             'scrollIntoViewOptions' in window
+    } catch (e) {
+      return false
+    }
+  },
+  
+  // 平滑滚动到元素
+  scrollToElement: (element, options = {}) => {
+    if (!element) return
+    
+    const defaultOptions = {
+      behavior: 'smooth',
+      block: 'start',
+      inline: 'nearest'
+    }
+    
+    const finalOptions = { ...defaultOptions, ...options }
+    
+    // 如果支持现代scrollIntoView，直接使用
+    if (scrollUtils.supportsSmoothScroll()) {
+      try {
+        element.scrollIntoView(finalOptions)
+        return
+      } catch (e) {
+        console.warn('现代scrollIntoView失败，使用降级方案:', e)
+      }
+    }
+    
+    // 降级方案：使用传统的scrollTop方法
+    scrollUtils.fallbackScrollToElement(element, finalOptions)
+  },
+  
+  // 降级滚动方案
+  fallbackScrollToElement: (element, options) => {
+    const targetPosition = element.getBoundingClientRect().top + window.pageYOffset
+    const startPosition = window.pageYOffset
+    const distance = targetPosition - startPosition
+    const duration = options.behavior === 'smooth' ? 500 : 0 // 平滑滚动持续时间
+    
+    if (duration === 0) {
+      // 即时滚动
+      window.scrollTo(0, targetPosition)
+      return
+    }
+    
+    // 平滑滚动动画
+    let start = null
+    const animation = (timestamp) => {
+      if (!start) start = timestamp
+      const progress = timestamp - start
+      const percentage = Math.min(progress / duration, 1)
+      
+      // 缓动函数
+      const easeInOutCubic = (t) => {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+      }
+      
+      window.scrollTo(0, startPosition + distance * easeInOutCubic(percentage))
+      
+      if (percentage < 1) {
+        window.requestAnimationFrame(animation)
+      }
+    }
+    
+    window.requestAnimationFrame(animation)
+  },
+  
+  // 检查元素是否包含预测结果
+  isPredictionResultsElement: (element) => {
+    if (!element) return false
+    
+    // 检查类名
+    if (element.classList && element.classList.contains('prediction-results')) {
+      return true
+    }
+    
+    // 检查子元素中是否包含预测结果相关内容
+    const heading = element.querySelector('h2')
+    if (heading && heading.textContent && heading.textContent.includes('预测结果')) {
+      return true
+    }
+    
+    // 检查元素本身的内容
+    if (element.textContent && element.textContent.includes('预测结果')) {
+      return true
+    }
+    
+    return false
+  }
+}
 
 // 初始化错误存储和Toast存储
 const errorStore = useErrorStore()
 const toastStore = useToastStore()
 
-// 预测参数
-const params = ref({
+// Tab 状态
+const activeTab = ref('single')
+
+// 单组预测参数
+const singleParams = ref({
+  algorithm: 'frequency'
+})
+
+// 多组预测参数
+const multipleParams = ref({
   algorithm: 'frequency',
   count: 5
+})
+
+// 为了向后兼容，保留原有的 params 对象
+const params = computed(() => {
+  return activeTab.value === 'single'
+    ? { ...singleParams.value, count: 1 }
+    : multipleParams.value
 })
 
 // 预测结果
@@ -329,6 +567,10 @@ const pagination = ref({
 const loadMoreTrigger = ref(null)
 const hasMoreData = ref(true)
 const observer = ref(null)
+
+// 视频弹框相关
+const showVideoModal = ref(false)
+const videoPlayer = ref(null)
 
 // 期数过滤相关
 const issueFilter = ref({
@@ -426,11 +668,48 @@ const getPrizeLevelClass = (prizeLevel, hasResult = true) => {
   return prizeClasses[prizeLevel] || 'bg-gray-100 text-gray-800'
 }
 
-// 生成预测
-const generatePrediction = async () => {
+// 生成单组预测
+const generateSinglePrediction = async () => {
+  // 显示视频弹框
+  showVideoModal.value = true
+}
+
+// 执行实际的预测请求
+const executePrediction = async () => {
   loading.value = true
   try {
-    const response = await getWithTimeout('/api/lottery/predict', params.value)
+    const response = await getWithTimeout('/api/lottery/predict', {
+      algorithm: singleParams.value.algorithm,
+      count: 1
+    })
+    
+    if (response.success) {
+      predictions.value = response.data.predictions
+      // 按照置信度由高到低排序
+      predictions.value.sort((a, b) => b.confidence - a.confidence)
+      
+      // 滚动到预测结果区域
+      nextTick(() => {
+        const resultsElement = document.querySelector('.prediction-results')
+        console.log('预测结果元素:', resultsElement);
+        
+        if (resultsElement && scrollUtils.isPredictionResultsElement(resultsElement)) {
+          scrollUtils.scrollToElement(resultsElement, { behavior: 'smooth', block: 'start' })
+        }
+      })
+    }
+  } catch (error) {
+    errorStore.handleApiError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 生成多组预测
+const generateMultiplePrediction = async () => {
+  loading.value = true
+  try {
+    const response = await getWithTimeout('/api/lottery/predict', multipleParams.value)
     
     if (response.success) {
       predictions.value = response.data.predictions
@@ -441,6 +720,15 @@ const generatePrediction = async () => {
     errorStore.handleApiError(error)
   } finally {
     loading.value = false
+  }
+}
+
+// 为了向后兼容，保留原有的 generatePrediction 函数
+const generatePrediction = async () => {
+  if (activeTab.value === 'single') {
+    await generateSinglePrediction()
+  } else {
+    await generateMultiplePrediction()
   }
 }
 
@@ -677,5 +965,23 @@ watch(loadMoreTrigger, () => {
     setupInfiniteScroll()
   }
 })
+
+// 视频播放完成后的处理
+const onVideoEnded = async () => {
+  // 关闭视频弹框
+  showVideoModal.value = false
+  
+  // 执行预测请求
+  await executePrediction()
+}
+
+// 关闭视频弹框
+const closeVideoModal = () => {
+  showVideoModal.value = false
+  if (videoPlayer.value) {
+    videoPlayer.value.pause()
+    videoPlayer.value.currentTime = 0
+  }
+}
 </script>
 
